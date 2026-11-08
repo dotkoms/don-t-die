@@ -163,12 +163,6 @@ Principles:
    independently. No paid service without an explicit go, as ever.
 
 All six decisions closed (2026-11-08). Next step: explicit go on M0 — repo
-scaffold (`pipeline/` + `site/`) and the PubMed + ClinicalTrials.gov adapters.
-
-**Open (in decision order):**
-
-6. **Hosting** — static-ish + serverless vs long-running Python worker +
-   web app. Free tier first, no paid services without an explicit go.
 
 ## 7. Milestones (not yet approved — for discussion)
 
