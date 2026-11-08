@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dontdie"
+version = "0.1.0"
+description = "don-t-die pipeline: gather, normalize, dedupe longevity science items"
+requires-python = ">=3.9"
+dependencies = [
+    "requests>=2.31",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+dontdie = "dontdie.cli:main"
+
+[tool.setuptools]
+packages = ["dontdie", "dontdie.sources"]

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE PubmedArticleSet PUBLIC "-//NLM//DTD PubMedArticle, 1st January 2019//EN" "https://dtd.nlm.nih.gov/ncbi/pubmed/out/pubmed_190101.dtd">
+<PubmedArticleSet>
+  <PubmedArticle>
+    <MedlineCitation>
+      <PMID>40123456</PMID>
+      <Article>
+        <Journal>
+          <ISOAbbrevation>Nat Aging</ISOAbbrevation>
+          <JournalIssue>
+            <PubDate>
+              <Year>2026</Year>
+              <Month>Oct</Month>
+              <Day>15</Day>
+            </PubDate>
+          </JournalIssue>
+        </Journal>
+        <ArticleTitle>Rapamycin dosing in older adults: a randomized trial</ArticleTitle>
+        <Abstract>
+          <AbstractText Label="BACKGROUND">Rapamycin extends lifespan in mice.</AbstractText>
+          <AbstractText>We report a 12-week trial in 65 adults.</AbstractText>
+        </Abstract>
+        <AuthorList>
+          <Author>
+            <ForeName>Jane A</ForeName>
+            <LastName>Doe</LastName>
+          </Author>
+          <Author>
+            <CollectiveName>Aging Research Consortium</CollectiveName>
+          </Author>
+        </AuthorList>
+        <ELocationID EIdType="doi">10.1038/example.2026.001</ELocationID>
+        <Language>eng</Language>
+      </Article>
+    </MedlineCitation>
+  </PubmedArticle>
+  <PubmedArticle>
+    <MedlineCitation>
+      <PMID>40123457</PMID>
+      <Article>
+        <Journal>
+          <Title>Journal of Geroscience</Title>
+          <JournalIssue>
+            <PubDate>
+              <MedlineDate>2026 Sep-Oct</MedlineDate>
+            </PubDate>
+          </JournalIssue>
+        </Journal>
+        <ArticleTitle>Senescent cell clearance improves vascular function</ArticleTitle>
+        <Abstract>
+          <AbstractText>Senolytic treatment improved endothelial function in aged rats.</AbstractText>
+        </Abstract>
+        <AuthorList>
+          <Author>
+            <LastName>Smith</LastName>
+            <ForeName>Bob</ForeName>
+          </Author>
+        </AuthorList>
+      </Article>
+    </MedlineCitation>
+  </PubmedArticle>
+</PubmedArticleSet>

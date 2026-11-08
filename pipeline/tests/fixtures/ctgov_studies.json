@@ -1,0 +1,47 @@
+{
+  "studies": [
+    {
+      "protocolSection": {
+        "identificationModule": {
+          "nctId": "NCT06123456",
+          "briefTitle": "Rapamycin for Biological Aging",
+          "officialTitle": "A Study of Rapamycin to Slow Biological Aging in Older Adults"
+        },
+        "statusModule": {
+          "overallStatus": "RECRUITING",
+          "startDateStruct": {"date": "2026-09-01"},
+          "primaryCompletionDateStruct": {"date": "2027-09-01"},
+          "lastUpdatePostDateStruct": {"date": "2026-11-01"}
+        },
+        "sponsorCollaboratorsModule": {
+          "leadSponsor": {"name": "Example University"}
+        },
+        "designModule": {
+          "phases": ["PHASE2"],
+          "enrollmentInfo": {"count": 120}
+        },
+        "conditionsModule": {
+          "conditions": ["Biological Aging"]
+        },
+        "armsInterventionsModule": {
+          "interventions": [{"name": "Rapamycin"}, {"name": "Placebo"}]
+        },
+        "descriptionModule": {
+          "briefSummary": "This trial tests whether low-dose rapamycin slows markers of biological aging."
+        }
+      }
+    },
+    {
+      "protocolSection": {
+        "identificationModule": {
+          "nctId": "NCT06000099",
+          "briefTitle": "Senolytics in Kidney Disease"
+        },
+        "statusModule": {
+          "overallStatus": "COMPLETED"
+        }
+      }
+    }
+  ],
+  "nextPageToken": null
+}
