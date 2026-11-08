@@ -133,10 +133,16 @@ Principles:
    Rationale: Python matches the pipeline's grain (NCBI/OpenAlex wrangling,
    pandas backfill, no build step); Next.js gives SSR/SEO, which a public
    knowledge base lives or dies on, plus a free-tier host.
+4. **Cadence: fetch daily, publish weekly.** The pipeline runs daily (keeps the
+   corpus and entity pages fresh; high-signal events never sit in a queue).
+   The digest publishes weekly as a real editorial unit — one substantial,
+   linkable page per issue; daily longevity output is too thin to sustain a
+   daily promise. The landing page always shows the latest issue. A "recent
+   items" river between issues is a possible later UI addition, not a cadence
+   change.
 
 **Open (in decision order):**
 
-4. **Cadence** — daily fetch; digest published daily or weekly?
 5. **LLM extraction budget** — which tier items get LLM-extracted fields;
    proposed default: only items that pass the relevance classifier.
 6. **Hosting** — static-ish + serverless vs long-running Python worker +
