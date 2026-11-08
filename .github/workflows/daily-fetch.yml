@@ -1,0 +1,52 @@
+name: daily fetch
+
+# Daily pipeline run (decision 4: fetch daily). Needs the DATABASE_URL secret
+# (Neon, or any Postgres) to load into — without it the run is skipped, not
+# failed: an ephemeral runner's landing zone would vanish anyway.
+
+on:
+  schedule:
+    # ~06:10 UTC daily, after NCBI's daily update window; off the :00 marks.
+    - cron: "10 6 * * *"
+  workflow_dispatch: {} # manual trigger
+
+permissions:
+  contents: read
+
+concurrency:
+  group: daily-fetch
+  cancel-in-progress: false
+
+env:
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: pipeline
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pipeline
+        run: pip install --user .
+
+      - name: Migrate
+        if: env.DATABASE_URL != ''
+        run: python -m dontdie migrate
+
+      - name: Fetch + load (daily)
+        if: env.DATABASE_URL != ''
+        run: python -m dontdie run --days 2
+
+      - name: No DATABASE_URL secret — skipping
+        if: env.DATABASE_URL == ''
+        run: |
+          echo "DATABASE_URL secret is not set; nothing would survive this" \
+               "ephemeral runner. Set the secret to activate the daily run."

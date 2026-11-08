@@ -2,11 +2,10 @@
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from typing import List, Optional
 
-from . import landing
+from . import landing, store
 from .sources import SOURCES
 
 
@@ -32,15 +31,49 @@ def cmd_fetch(args: argparse.Namespace) -> int:
     return 0 if all(not r.get("errors") for r in runs.values()) else 1
 
 
+def cmd_migrate(args: argparse.Namespace) -> int:
+    applied = store.migrate()
+    print("migrations applied:", applied if applied else "none (up to date)")
+    return 0
+
+
+def cmd_load(args: argparse.Namespace) -> int:
+    stats = store.load()
+    print(
+        f"loaded {stats['total']} items ({stats['new']} new) — "
+        f"{stats['relevant']} relevant, {stats['excluded']} excluded"
+    )
+    landing.append_fetch_log({"command": "load", "stats": stats})
+    return 0
+
+
+def cmd_run(args: argparse.Namespace) -> int:
+    """fetch + load — the cron entrypoint."""
+    fetch_args = argparse.Namespace(
+        sources=args.sources, days=args.days, limit=args.limit
+    )
+    status = cmd_fetch(fetch_args)
+    if status != 0:
+        return status
+    return cmd_load(args)
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(prog="dontdie", description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
 
     p_fetch = sub.add_parser("fetch", help="fetch from all or selected sources")
-    p_fetch.add_argument("--source", dest="sources", action="append", help="repeatable")
-    p_fetch.add_argument("--days", type=int, default=7, help="trailing window (default 7)")
-    p_fetch.add_argument("--limit", type=int, default=100, help="per domain query")
+    p_load = sub.add_parser("load", help="load the landing zone into Postgres")
+    p_migrate = sub.add_parser("migrate", help="apply pending migrations")
+    p_run = sub.add_parser("run", help="fetch then load (cron entrypoint)")
+    for p in (p_fetch, p_run):
+        p.add_argument("--source", dest="sources", action="append", help="repeatable")
+        p.add_argument("--days", type=int, default=7, help="trailing window (default 7)")
+        p.add_argument("--limit", type=int, default=100, help="per domain query")
     p_fetch.set_defaults(func=cmd_fetch)
+    p_load.set_defaults(func=cmd_load)
+    p_migrate.set_defaults(func=cmd_migrate)
+    p_run.set_defaults(func=cmd_run)
 
     args = parser.parse_args(argv)
     return args.func(args)

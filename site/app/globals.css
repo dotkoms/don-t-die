@@ -20,3 +20,107 @@ body {
 h1 {
   margin-bottom: 1rem;
 }
+
+h2 {
+  margin: 1.5rem 0 0.5rem;
+  font-size: 1.1rem;
+}
+
+.tagline {
+  margin-bottom: 1.5rem;
+  max-width: 36rem;
+}
+
+.back {
+  display: inline-block;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.search {
+  margin: 1rem 0 1.5rem;
+}
+
+.search input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+}
+
+.domains {
+  list-style: none;
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+.domains .count {
+  margin-left: 0.25rem;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+}
+
+.domains p {
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.items {
+  list-style: none;
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.items a {
+  text-decoration: none;
+}
+
+.items a:hover {
+  text-decoration: underline;
+}
+
+.meta {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.empty {
+  padding: 0.75rem 1rem;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  opacity: 0.85;
+  margin: 1rem 0;
+}
+
+.abstract {
+  white-space: pre-line;
+}
+
+.attribution {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.domains-on-item {
+  margin: 0.5rem 0;
+}
+
+.domains-on-item a {
+  display: inline-block;
+  margin-right: 0.5rem;
+  font-size: 0.85rem;
+}
+
+footer {
+  margin-top: 3rem;
+  border-top: 1px solid currentColor;
+  padding-top: 1rem;
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+code {
+  font-size: 0.9em;
+}
