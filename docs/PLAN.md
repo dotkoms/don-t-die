@@ -115,6 +115,17 @@ Principles:
      "what changed this week", curated domain pages. The pipeline remains
      primary-source-first; media-tier items stay down-ranked.
 
+**Decided (2026-11-08):**
+
+2. **Public artifact: knowledge base, with the digest as the landing section.**
+   The front door is browsable structure — the domain map (senolytics,
+   reprogramming, biomarkers, …), into entity pages (compounds, trials, orgs)
+   collecting everything the pipeline has attached to them. The weekly digest is
+   the landing page's top section ("what changed this week"), not the site's
+   identity. Feed items link into entity pages, so nothing valuable ages off the
+   front page. Entity pages therefore move earlier: they are the destination the
+   digest points at.
+
 **Open (in decision order):**
 
 2. **What the public artifact is** — structured knowledge base (browse
@@ -137,7 +148,9 @@ Revised for a public product:
 - M0: source adapters for PubMed + ClinicalTrials.gov, raw JSON landing, dedupe.
 - M1: normalized item schema + relevance tagging + Postgres store
   **+ public web app skeleton: item pages, search, per-domain browse**.
-- M2: editorial digest v1 ("what changed this week") as a public page.
-- M3: extraction pass + provenance/generated labels, shown on-page.
-- M4: entity pages (compounds, trials, orgs) linking the corpus together.
+- M2: editorial digest v1 ("what changed this week") as the landing page's top
+  section + domain-map browse.
+- M3: entity pages (compounds, trials, orgs) — moved up: the digest's links
+  need a destination.
+- M4: extraction pass + provenance/generated labels, shown on-page.
 - M5: tracking/follow features for visitors.
