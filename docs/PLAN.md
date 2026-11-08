@@ -153,6 +153,17 @@ Principles:
    explicit, job-specific go** — the backfill included. Extraction is LLM-labeled
    (model + date) per the honesty principle, never merged with source-truth
    fields.
+6. **Hosting: managed-free split — Vercel + Neon + GitHub Actions.** Vercel
+   hobby tier hosts the Next.js site (SSR/SEO, TLS, no servers). Neon free tier
+   hosts Postgres (0.5 GB is years of headroom for metadata + abstracts; free
+   compute auto-suspends when idle — a cold-start second, acceptable). GitHub
+   Actions scheduled workflow runs the daily pipeline (cron delay up to
+   ~15–30 min is irrelevant at daily cadence; minutes budget comfortable).
+   Zero cost; pieces coupled only by the connection string, each swappable
+   independently. No paid service without an explicit go, as ever.
+
+All six decisions closed (2026-11-08). Next step: explicit go on M0 — repo
+scaffold (`pipeline/` + `site/`) and the PubMed + ClinicalTrials.gov adapters.
 
 **Open (in decision order):**
 
