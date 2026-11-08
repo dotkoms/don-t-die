@@ -93,24 +93,51 @@ Principles:
 4. **Alerts** — only for rare, high-signal events (phase II/III result lands,
    FDA action, major funding round).
 
-## 6. Open decisions
+## 6. Decisions
 
-1. **Primary consumer** — personal research tool for you, public database, or
-   feedstock for another project (yc-app / Vista wedge content)? Changes how much
-   polish the surfaces need.
-2. **Language / runtime** — Python (fits the research-tool world, PubMed/analysis
-   libs) is the default; say if you want TypeScript to match other repos.
-3. **Cadence** — daily fetch + weekly digest, or everything real-time-ish?
-4. **LLM extraction budget** — which tier items get LLM-extracted fields (cost
-   scales with corpus size); proposed default: only items that pass the relevance
-   classifier.
-5. **Storage** — SQLite single-file to start (backs the no-keys, runs-anywhere
-   default), Postgres later if multi-user.
+**Decided (2026-11-08):**
+
+1. **Primary consumer: PUBLIC.** The system is a browsable public database/site,
+   not a private tool. Implications:
+   - The corpus-first architecture stands, but a real product surface moves to M1:
+     web app, item pages, search, and per-domain browsing are core, not polish.
+   - Multi-user read from day one → Postgres (not SQLite) becomes the default
+     store; single SQLite file only if we want a dev-mode shortcut.
+   - Data modeling gets stricter: normalized items need stable public IDs, slugs,
+     and per-source attribution shown on-page, because the pages are the product.
+   - Licensing matters once we republish: ClinicalTrials.gov is US-government
+     public domain; PubMed abstracts are publisher-copyrighted and redistributed
+     under NCBI's terms (attribution + link-back required); preprints vary by
+     license (CC-BY on many bioRxiv/medRxiv items). Show abstracts with
+     attribution and links; never mirror paywalled full text. LLM-generated
+     summaries must be visually labeled as generated, per the honesty principle.
+   - Editorial layer: a public site implies a point of view — ranked digests,
+     "what changed this week", curated domain pages. The pipeline remains
+     primary-source-first; media-tier items stay down-ranked.
+
+**Open (in decision order):**
+
+2. **What the public artifact is** — structured knowledge base (browse
+   interventions, trials, papers as linked entities), publication (ranked
+   editorial feed of what changed), or tracker (follow specific trials/
+   compounds over time). Probably all three eventually; which is the homepage?
+3. **Language / runtime** — Python for the pipeline is still the default; the
+   public site wants a web stack (Next.js/TypeScript is the default candidate).
+   Monorepo with both, or pipeline + site as separate deployables?
+4. **Cadence** — daily fetch; digest published daily or weekly?
+5. **LLM extraction budget** — which tier items get LLM-extracted fields;
+   proposed default: only items that pass the relevance classifier.
+6. **Hosting** — static-ish + serverless vs long-running Python worker +
+   web app. Free tier first, no paid services without an explicit go.
 
 ## 7. Milestones (not yet approved — for discussion)
 
+Revised for a public product:
+
 - M0: source adapters for PubMed + ClinicalTrials.gov, raw JSON landing, dedupe.
-- M1: normalized item schema + relevance tagging + SQLite store.
-- M2: terminal digest v1 (ranked markdown).
-- M3: extraction pass + provenance labels.
-- M4: search + per-domain pages.
+- M1: normalized item schema + relevance tagging + Postgres store
+  **+ public web app skeleton: item pages, search, per-domain browse**.
+- M2: editorial digest v1 ("what changed this week") as a public page.
+- M3: extraction pass + provenance/generated labels, shown on-page.
+- M4: entity pages (compounds, trials, orgs) linking the corpus together.
+- M5: tracking/follow features for visitors.
