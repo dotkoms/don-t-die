@@ -139,12 +139,23 @@ Principles:
    linkable page per issue; daily longevity output is too thin to sustain a
    daily promise. The landing page always shows the latest issue. A "recent
    items" river between issues is a possible later UI addition, not a cadence
+   items river between issues is a possible later UI addition, not a cadence
    change.
+5. **LLM extraction budget: every item that passes the relevance classifier,
+   extracted once, idempotently.** Rationale: the knowledge base's promise is
+   structured evidence on entity pages, so extraction can't be limited to
+   digest-ranked items without degrading the long tail. Model: Claude Haiku 4.5
+   (`claude-haiku-4-5`) for bulk per-item extraction (~$10/month at a few dozen
+   relevant items/day); editorial digest drafting is a later, small-volume
+   decision where a stronger model can justify itself. The initial corpus
+   backfill (~5–10K papers, one-time) runs through the Batch API (async, 50%
+   cost) — a one-time ~$25–50. Standing rule: **no paid run happens without an
+   explicit, job-specific go** — the backfill included. Extraction is LLM-labeled
+   (model + date) per the honesty principle, never merged with source-truth
+   fields.
 
 **Open (in decision order):**
 
-5. **LLM extraction budget** — which tier items get LLM-extracted fields;
-   proposed default: only items that pass the relevance classifier.
 6. **Hosting** — static-ish + serverless vs long-running Python worker +
    web app. Free tier first, no paid services without an explicit go.
 
