@@ -125,16 +125,17 @@ Principles:
    identity. Feed items link into entity pages, so nothing valuable ages off the
    front page. Entity pages therefore move earlier: they are the destination the
    digest points at.
+3. **Stack: monorepo, two runtimes.** `pipeline/` is Python (fetchers, dedupe,
+   relevance tagging, LLM extraction); `site/` is Next.js/TypeScript (browse,
+   search, item/entity/digest pages). One Postgres shared by both; the site
+   connects with a read-only role and never imports pipeline code. Schema
+   ownership: migrations live with the Python pipeline; TS types mirror them.
+   Rationale: Python matches the pipeline's grain (NCBI/OpenAlex wrangling,
+   pandas backfill, no build step); Next.js gives SSR/SEO, which a public
+   knowledge base lives or dies on, plus a free-tier host.
 
 **Open (in decision order):**
 
-2. **What the public artifact is** — structured knowledge base (browse
-   interventions, trials, papers as linked entities), publication (ranked
-   editorial feed of what changed), or tracker (follow specific trials/
-   compounds over time). Probably all three eventually; which is the homepage?
-3. **Language / runtime** — Python for the pipeline is still the default; the
-   public site wants a web stack (Next.js/TypeScript is the default candidate).
-   Monorepo with both, or pipeline + site as separate deployables?
 4. **Cadence** — daily fetch; digest published daily or weekly?
 5. **LLM extraction budget** — which tier items get LLM-extracted fields;
    proposed default: only items that pass the relevance classifier.
