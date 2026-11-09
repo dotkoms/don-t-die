@@ -13,12 +13,15 @@ import psycopg2
 
 from . import config
 from .relevance import tag
+from .sources import rss
 
 MIGRATIONS_DIR = config.PIPELINE_ROOT / "migrations"
 
 SEED_SOURCES = [
     ("pubmed", "PubMed", "https://pubmed.ncbi.nlm.nih.gov/", 1),
     ("ctgov", "ClinicalTrials.gov", "https://clinicaltrials.gov/", 1),
+    # News outlets are tier 2: derived reporting, never primary sources.
+    *[(slug, name, url, 2) for slug, name, url, _ua in rss.FEEDS],
 ]
 
 
@@ -74,7 +77,7 @@ def upsert_item(cur, record: Dict[str, Any]) -> bool:
     """
     source = record["source"]
     source_id = record["item_id"]
-    slug = f"{source}-{source_id}"
+    slug = record.get("slug") or f"{source}-{source_id}"
     raw = {
         k: v
         for k, v in record.items()
@@ -175,3 +178,47 @@ def load(dsn: Optional[str] = None) -> Dict[str, int]:
     finally:
         conn.close()
     return stats
+
+
+def save_research_note(note: Dict[str, Any],
+                       dsn: Optional[str] = None) -> int:
+    """Persist one agent-synthesized research note (idempotent by slug).
+
+    Like extractions, the note is labeled with the model that wrote it and
+    never merges with source truth; only verified sources are attached.
+    Returns the note id.
+    """
+    conn = connect(dsn)
+    try:
+        with conn, conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO research_notes (slug, target, summary, model, status)
+                VALUES (%s, %s, %s, %s, %s)
+                ON CONFLICT (slug) DO UPDATE
+                    SET summary = EXCLUDED.summary, model = EXCLUDED.model,
+                        status = EXCLUDED.status
+                RETURNING id
+                """,
+                (
+                    note["slug"], note["target"], note["summary"],
+                    note["model"], note.get("status", "draft"),
+                ),
+            )
+            note_id = cur.fetchone()[0]
+            for src in note.get("sources", []):
+                cur.execute(
+                    """
+                    INSERT INTO research_note_sources
+                        (note_id, kind, title, url, verified)
+                    VALUES (%s, %s, %s, %s, %s)
+                    ON CONFLICT (note_id, url) DO UPDATE
+                        SET kind = EXCLUDED.kind, title = EXCLUDED.title,
+                            verified = EXCLUDED.verified
+                    """,
+                    (note_id, src.get("kind", ""), src.get("title", ""),
+                     src["url"], bool(src.get("verified", False))),
+                )
+    finally:
+        conn.close()
+    return note_id

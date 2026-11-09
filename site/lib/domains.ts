@@ -43,6 +43,12 @@ export const DOMAINS: { slug: string; name: string; blurb: string }[] = [
     name: "Clinical evidence",
     blurb: "Trials, endpoints and the move of aging into the clinic.",
   },
+  {
+    slug: "peptides",
+    name: "Peptides",
+    blurb:
+      "Longevity-circulating peptides: BPC-157, epitalon, MOTS-c, humanin, elamipretide, GLP-1 agonists.",
+  },
 ];
 
 export function domainName(slug: string): string {

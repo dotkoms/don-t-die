@@ -1,6 +1,7 @@
 # don-t-die — Research & Data Gathering System for Life Extension Medical Science
 
-Status: planning. Nothing is implemented yet; this doc is the scope of record.
+Status: M0–M2 built (pipeline, site, news + peptides + research agents); this
+doc is the scope of record.
 
 ## 1. What this is
 
@@ -23,6 +24,7 @@ The domain map, each of which becomes a tag/classification target:
 |---|---|
 | Geroscience fundamentals | Hallmarks of aging, mTOR, autophagy, cellular senescence, mitochondrial function, epigenetic clocks |
 | Interventions — pharmacological | Rapamycin, metformin, NAD+ precursors (NR/NMN), senolytics (dasatinib+quercetin, fisetin), GLP-1s, spermidine, TA-65 |
+| Peptide interventions | BPC-157, epitalon, MOTS-c, humanin, GHK-Cu, elamipretide (SS-31), tesamorelin, ipamorelin, CJC-1295, GLP-1 agonists — "all peptides" as a first-class domain |
 | Interventions — non-pharmacological | Caloric restriction, fasting protocols, exercise science, sleep, heat/cold exposure |
 | Rejuvenation biotech | Partial epigenetic reprogramming (OSK/Yamanaka), plasma dilution, thymus regeneration, cross-link breakers, senescent cell clearance |
 | Biomarkers | DNAm clocks (Horvath, Hannum, DunedinPACE), GlycanAge, blood panels (albumin, CRP, insulin, lipids), functional biomarkers (grip strength, VO2max) |
@@ -50,9 +52,10 @@ Tier 1 — primary, structured, machine-readable:
 
 Tier 2 — derived/community, needs careful provenance:
 
-- RSS: Longevity.Technology, Lifespan.io, Fight Aging!
-- Reddit r/longevity (JSON, no key)
-- Company press releases (scraped RSS where offered)
+- RSS (built, keyless): Longevity.Technology, Lifespan.io, Fight Aging!,
+  ScienceDaily (health/medicine), Medical Xpress
+- Reddit r/longevity (JSON, no key) — later
+- Company press releases (scraped RSS where offered) — later
 
 Tier 3 — deliberately not built on in v1: Google Scholar (no API, brittle),
 Crunchbase (paid), Twitter/X (API paid), paywalled journals beyond abstracts.
@@ -162,18 +165,67 @@ Principles:
    Zero cost; pieces coupled only by the connection string, each swappable
    independently. No paid service without an explicit go, as ever.
 
-All six decisions closed (2026-11-08). Next step: explicit go on M0 — repo
+7. **Multi-agent research system — "conventional but verifiable."** The
+   pipeline now has an on-demand research layer (`python3 -m dontdie research
+   <target>`) that answers questions beyond what scheduled ingestion catches.
+   Design: four steps, only two of which cost money.
+   - **News scout** — Claude with server-side web search restricted
+     (`allowed_domains`) to a named allowlist of conventional outlets
+     (Reuters, AP, STAT News, Longevity.Technology, Lifespan.io, Fight
+     Aging!, ScienceDaily, Medical Xpress, New Scientist, EurekAlert, and
+     peers). It can only cite from that surface.
+   - **Primary scout** — free, deterministic, no LLM: PubMed esearch for
+     recent publications matching the target.
+   - **Verifier** — deterministic code, not a model: every URL the scouts
+     produce is checked against a machine-readable allowlist (`NEWS_OUTLETS`,
+     `PRIMARY_HOSTS`) and rejected otherwise; refused URLs are reported, not
+     silently dropped.
+   - **Synthesizer** — Claude writes a markdown brief citing only the
+     verified sources, distinguishing human vs. animal evidence.
+   Verifiability is operationalized as an allowlist, so "is this source
+   trustworthy" is answered by code, not by a model's judgment. Results
+   land in `research_notes` with the generating model recorded — an
+   LLM-generated artifact, labeled as such per the honesty principle.
+   Paid runs obey the standing rule doubly: the command **dry-runs by
+   default and refuses to spend without an explicit `--go` flag**, even when
+   `ANTHROPIC_API_KEY` is set. No key is required for anything else in the
+   system.
 
-## 7. Milestones (not yet approved — for discussion)
+**Decided (2026-11-08):**
+
+8. **Tier-2 news ingestion + peptides as a first-class domain.** Two
+   expansions of the ingestion surface, both keyless:
+   - **News outlets via RSS** (Longevity.Technology, Lifespan.io, Fight
+     Aging!, ScienceDaily, Medical Xpress): fetched, deduped by canonical
+     URL, gated by the same relevance classifier, stored with
+     `tier = 2`. News items are never presented as primary sources — item
+     pages say "news coverage (tier 2)" and "check the primary source,"
+     and only a short summary is stored, never the article body.
+   - **Peptides**: a new `peptides` query domain (BPC-157, epitalon,
+     MOTS-c, humanin, GHK-Cu, elamipretide/SS-31, tesamorelin, ipamorelin,
+     CJC-1295, GLP-1 agonists) in PubMed, ClinicalTrials.gov, and the
+     relevance gate. The gate moved to `keyword-v1.1`: Unicode hyphen
+     normalization (PubMed abstracts contain U+2011), word-boundary
+     matching, and peptide names added as strong terms so mainstream news
+     mentioning them can't be excluded by materials hints.
+
+All eight decisions closed (2026-11-08).
+
+## 7. Milestones
 
 Revised for a public product:
 
-- M0: source adapters for PubMed + ClinicalTrials.gov, raw JSON landing, dedupe.
-- M1: normalized item schema + relevance tagging + Postgres store
-  **+ public web app skeleton: item pages, search, per-domain browse**.
-- M2: editorial digest v1 ("what changed this week") as the landing page's top
+- **M0 — done, merged to main.** Source adapters for PubMed +
+  ClinicalTrials.gov, raw JSON landing, dedupe.
+- **M1 — done, merged to main.** Normalized item schema + relevance tagging
+  + Postgres store **+ public web app skeleton: item pages, search,
+  per-domain browse**.
+- **M2 — done (this branch).** Tier-2 news outlets via RSS (5 feeds,
+  keyless), the peptides domain, relevance gate v1.1, and the multi-agent
+  research layer (decisions 7–8).
+- M3: editorial digest v1 ("what changed this week") as the landing page's top
   section + domain-map browse.
-- M3: entity pages (compounds, trials, orgs) — moved up: the digest's links
+- M4: entity pages (compounds, trials, orgs) — moved up: the digest's links
   need a destination.
-- M4: extraction pass + provenance/generated labels, shown on-page.
-- M5: tracking/follow features for visitors.
+- M5: extraction pass + provenance/generated labels, shown on-page.
+- M6: tracking/follow features for visitors.

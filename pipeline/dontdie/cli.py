@@ -9,6 +9,13 @@ from . import landing, store
 from .sources import SOURCES
 
 
+def cmd_research(args: argparse.Namespace) -> int:
+    """Multi-agent research run for one target. Dry run unless --go."""
+    from .agents import research
+
+    return research.run(args.target, go=args.go, model=args.model)
+
+
 def cmd_fetch(args: argparse.Namespace) -> int:
     names: List[str] = args.sources or list(SOURCES)
     unknown = [s for s in names if s not in SOURCES]
@@ -66,6 +73,17 @@ def main(argv: Optional[List[str]] = None) -> int:
     p_load = sub.add_parser("load", help="load the landing zone into Postgres")
     p_migrate = sub.add_parser("migrate", help="apply pending migrations")
     p_run = sub.add_parser("run", help="fetch then load (cron entrypoint)")
+    p_research = sub.add_parser(
+        "research", help="multi-agent research note for a target (dry run)"
+    )
+    p_research.add_argument("target", help="research target, e.g. 'BPC-157'")
+    p_research.add_argument(
+        "--go", action="store_true",
+        help="actually run the paid LLM job (explicit, per-job approval)",
+    )
+    p_research.add_argument(
+        "--model", default=None, help="override DD_RESEARCH_MODEL"
+    )
     for p in (p_fetch, p_run):
         p.add_argument("--source", dest="sources", action="append", help="repeatable")
         p.add_argument("--days", type=int, default=7, help="trailing window (default 7)")
@@ -74,6 +92,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     p_load.set_defaults(func=cmd_load)
     p_migrate.set_defaults(func=cmd_migrate)
     p_run.set_defaults(func=cmd_run)
+    p_research.set_defaults(func=cmd_research)
 
     args = parser.parse_args(argv)
     return args.func(args)

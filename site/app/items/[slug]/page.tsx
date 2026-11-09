@@ -15,7 +15,7 @@ export default async function ItemPage({
   const { slug } = await params;
   const rows = await query<Item>(
     `SELECT slug, source, source_id, title, url, published, is_relevant,
-            relevance_terms, raw
+            relevance_terms, relevance_method, raw
      FROM items WHERE slug = $1`,
     [slug],
   );
@@ -31,8 +31,9 @@ export default async function ItemPage({
         <h1>{item.title}</h1>
         <p className="empty">
           This item is in the corpus but did not pass the relevance gate (
-          <code>keyword-v1</code>): no aging-science term found in its title or
-          abstract. It is kept for auditability, not shown in public views.
+          <code>{item.relevance_method || "keyword-v1.1"}</code>): no
+          aging-science term found in its title or abstract. It is kept for
+          auditability, not shown in public views.
         </p>
       </main>
     );
@@ -46,7 +47,13 @@ export default async function ItemPage({
   );
 
   const isPubmed = item.source === "pubmed";
-  const body = isPubmed ? item.raw.abstract : item.raw.brief_summary;
+  const isCtgov = item.source === "ctgov";
+  const isNews = !isPubmed && !isCtgov;
+  const body = isPubmed
+    ? item.raw.abstract
+    : isNews
+      ? item.raw.summary
+      : item.raw.brief_summary;
 
   return (
     <main>
@@ -60,18 +67,22 @@ export default async function ItemPage({
       <p className="meta">
         {isPubmed
           ? (item.raw.authors ?? []).join(", ")
-          : `Sponsor: ${item.raw.sponsor ?? "—"}`}
+          : isNews
+            ? `${item.raw.outlet ?? item.source} · news coverage (tier 2)`
+            : `Sponsor: ${item.raw.sponsor ?? "—"}`}
       </p>
       <p className="meta">
         {isPubmed
           ? item.raw.journal
-          : [
-              item.raw.status,
-              (item.raw.phases ?? []).join(" / "),
-              item.raw.conditions?.join(", "),
-            ]
-              .filter(Boolean)
-              .join(" · ")}
+          : isCtgov
+            ? [
+                item.raw.status,
+                (item.raw.phases ?? []).join(" / "),
+                item.raw.conditions?.join(", "),
+              ]
+                .filter(Boolean)
+                .join(" · ")
+            : "News summarizes evidence — check the primary source."}
         {item.published ? ` · ${item.published}` : ""}
       </p>
 
@@ -87,19 +98,25 @@ export default async function ItemPage({
 
       {body ? (
         <section>
-          <h2>{isPubmed ? "Abstract" : "Brief summary"}</h2>
+          <h2>{isPubmed ? "Abstract" : isNews ? "Coverage summary" : "Brief summary"}</h2>
           <p className="abstract">{body}</p>
           <p className="attribution">
-            Abstract text © its publisher, redistributed with attribution
-            under NCBI terms —{" "}
-            <a href={item.url}>view the record at {isPubmed ? "PubMed" : "ClinicalTrials.gov"}</a>.
+            {isPubmed
+              ? "Abstract text © its publisher, redistributed with attribution under NCBI terms — "
+              : isNews
+                ? "News coverage from a tier-2 outlet — it summarizes primary evidence; only this short summary is stored, the article © its publisher — "
+                : "US-government public domain via ClinicalTrials.gov — "}
+            <a href={item.url}>
+              view the record at{" "}
+              {isPubmed ? "PubMed" : isNews ? (item.raw.outlet ?? item.source) : "ClinicalTrials.gov"}
+            </a>.
           </p>
         </section>
       ) : null}
 
       <p className="meta">
-        Relevance gate: <code>keyword-v1</code>, matched{" "}
-        {item.relevance_terms.join(", ") || "—"}
+        Relevance gate: <code>{item.relevance_method || "keyword-v1.1"}</code>,
+        matched {item.relevance_terms.join(", ") || "—"}
       </p>
     </main>
   );

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { query } from "@/lib/db";
+import { sourceLabel } from "@/lib/sourceLabel";
 import type { Item } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -60,7 +61,7 @@ export default async function SearchPage({
             <li key={item.slug}>
               <Link href={`/items/${item.slug}`}>{item.title}</Link>{" "}
               <span className="meta">
-                {item.source === "pubmed" ? "PubMed" : "ClinicalTrials.gov"}
+                {sourceLabel(item)}
                 {item.published ? ` · ${item.published}` : ""}
               </span>
             </li>

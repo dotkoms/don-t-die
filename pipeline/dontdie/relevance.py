@@ -27,22 +27,35 @@ AGING_TERMS: List[Tuple[str, bool]] = [
     ("caloric restriction", True), ("calorie restriction", True),
     ("dietary restriction", True), ("age-related", True),
     ("age associated", True), ("mortality", False),
+    # Peptide interventions (M2) — compounds circulating in the longevity
+    # space, matched on boundaries so "humanin" never hits inside another word.
+    ("BPC-157", True), ("epitalon", True), ("epithalon", True),
+    ("MOTS-c", True), ("humanin", True), ("GHK-Cu", True),
+    ("elamipretide", True), ("SS-31", True), ("tesamorelin", True),
+    ("ipamorelin", True), ("CJC-1295", True), ("semaglutide", True),
+    ("tirzepatide", True), ("GLP-1", True), ("glucagon-like peptide", True),
 ]
 
 # Strong false-positive sources inside those terms; e.g. "aging" of materials.
+# "composite resin" rather than "composite": in medical literature
+# "composite endpoint/outcome" is standard statistics language, not materials.
 EXCLUDE_HINTS = [
-    "dental", "composite", "resin", "concrete", "batter", "capacitor",
+    "dental", "composite resin", "resin", "concrete", "batter", "capacitor",
     "corrosion", "paint", "coating", "adhesive", "photovoltaic", "bitumen",
     "asphalt", "weld", "solder",
 ]
 
 # Aging-specific terms strong enough to keep an item even if a materials
-# hint appears (aging is also a materials-science word).
+# hint appears (aging is also a materials-science word). The peptide
+# compounds are here too: no materials paper mentions semaglutide.
 STRONG_TERMS = [
     "senescen", "senolytic", "geroscience", "gerontolog", "longevity",
     "lifespan", "life span", "rejuvenat", "healthspan", "geriatric",
     "epigenetic clock", "biological age", "caloric restriction",
     "calorie restriction", "dietary restriction", "life extension", "yamanaka",
+    "bpc-157", "epitalon", "epithalon", "mots-c", "humanin", "ghk-cu",
+    "elamipretide", "ss-31", "tesamorelin", "ipamorelin", "cjc-1295",
+    "semaglutide", "tirzepatide", "glp-1", "glucagon-like peptide",
 ]
 
 _TERM_RE = [
@@ -52,9 +65,19 @@ _TERM_RE = [
 ]
 
 
+# Typographic hyphen/dash variants (U+2010, U+2011, U+2012, U+2013, U+2015,
+# U+2212) — PubMed abstracts use U+2011 in "glucagon‑like peptide‑1", which
+# must not dodge a term match meant for the ASCII spelling.
+_HYPHEN_MAP = str.maketrans({
+    "‐": "-", "‑": "-", "‒": "-", "–": "-",
+    "―": "-", "−": "-",
+})
+
+
 def _search_text(record: Dict[str, Any]) -> str:
     fields = ["title", "abstract", "brief_summary", "official_title"]
-    return " ".join(record.get(f) or "" for f in fields).lower()
+    text = " ".join(record.get(f) or "" for f in fields).lower()
+    return text.translate(_HYPHEN_MAP)
 
 
 def classify(record: Dict[str, Any]) -> Tuple[bool, List[str]]:
@@ -76,5 +99,5 @@ def tag(record: Dict[str, Any]) -> Dict[str, Any]:
     out = dict(record)
     out["is_relevant"] = is_relevant
     out["relevance_terms"] = matched
-    out["relevance_method"] = "keyword-v1"
+    out["relevance_method"] = "keyword-v1.1"
     return out

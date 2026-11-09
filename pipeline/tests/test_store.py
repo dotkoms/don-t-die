@@ -37,7 +37,7 @@ def test_migrate_idempotent(dsn):
     first = store.migrate(dsn)
     second = store.migrate(dsn)
     assert second == []
-    assert set(first) <= {"0001_init.sql", "0002_relevance.sql"}
+    assert set(first) <= {"0001_init.sql", "0002_relevance.sql", "0003_research_notes.sql"}
 
 
 def test_load_upserts_and_dedupes(dsn, migrated, landing_dir):
@@ -77,7 +77,7 @@ def test_load_upserts_and_dedupes(dsn, migrated, landing_dir):
                 "pubmed-99990001",
                 "Rapamycin and mouse lifespan",
                 True,
-                "keyword-v1",
+                "keyword-v1.1",
             )
             cur.execute(
                 "SELECT domain FROM item_domains "

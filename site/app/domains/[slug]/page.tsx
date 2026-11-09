@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { query } from "@/lib/db";
 import { domainName } from "@/lib/domains";
+import { sourceLabel } from "@/lib/sourceLabel";
 import type { Item } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -53,9 +54,7 @@ export default async function DomainPage({
             <li key={item.slug}>
               <Link href={`/items/${item.slug}`}>{item.title}</Link>{" "}
               <span className="meta">
-                {item.source === "pubmed"
-                  ? (item.raw.journal ?? "PubMed")
-                  : (item.raw.sponsor ?? "ClinicalTrials.gov")}
+                {sourceLabel(item)}
                 {item.published ? ` · ${item.published}` : ""}
               </span>
             </li>

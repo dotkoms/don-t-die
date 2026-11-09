@@ -7,6 +7,7 @@ export type Item = {
   published: string | null;
   is_relevant: boolean;
   relevance_terms: string[];
+  relevance_method?: string;
   raw: {
     authors?: string[];
     journal?: string;
@@ -22,5 +23,8 @@ export type Item = {
     last_update?: string;
     brief_summary?: string;
     domain_query?: string;
+    // News items (tier-2 outlets): the outlet's own summary and name.
+    summary?: string;
+    outlet?: string;
   };
 };

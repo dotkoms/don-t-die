@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { query } from "@/lib/db";
 import { DOMAINS } from "@/lib/domains";
+import { sourceLabel } from "@/lib/sourceLabel";
 import type { Item } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -33,7 +34,8 @@ export default async function Home() {
       <h1>don&apos;t die</h1>
       <p className="tagline">
         A public knowledge base for life-extension medical science — gathered
-        from PubMed and ClinicalTrials.gov, tagged, and open to browse.
+        from PubMed, ClinicalTrials.gov and verifiable news outlets, tagged,
+        and open to browse.
       </p>
 
       {domainCounts === null ? (
@@ -78,9 +80,7 @@ export default async function Home() {
                 <li key={item.slug}>
                   <Link href={`/items/${item.slug}`}>{item.title}</Link>{" "}
                   <span className="meta">
-                    {item.source === "pubmed"
-                      ? (item.raw.journal ?? "PubMed")
-                      : (item.raw.sponsor ?? "ClinicalTrials.gov")}
+                    {sourceLabel(item)}
                     {item.published ? ` · ${item.published}` : ""}
                   </span>
                 </li>
@@ -94,8 +94,10 @@ export default async function Home() {
         <p>
           Abstracts are redistributed with attribution and link back to their
           source (NCBI terms; ClinicalTrials.gov is US-government public
-          domain). Relevance tagging is a transparent keyword gate,{" "}
-          <code>keyword-v1</code> — not a model.
+          domain; news is summarized, never mirrored, always link-back).
+          Relevance tagging is a transparent keyword gate,{" "}
+          <code>keyword-v1.1</code> — not a model. News items are tier-2
+          coverage, distinct from primary sources.
         </p>
       </footer>
     </main>
