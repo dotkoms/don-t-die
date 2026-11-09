@@ -26,7 +26,13 @@ from ..landing import land_item, utc_now_iso
 # outlet WAFs are picky in opposite ways: Longevity.Technology 403s a
 # browser-style UA from python's TLS stack but accepts curl's; Medical Xpress
 # 400s on a curl UA but accepts a plain identifying one. We never pretend to
-# be a browser. None = the honest default below.
+# be a browser — except Endpoints News, the single documented exception,
+# whose WAF refuses every honest identifying UA. None = the honest default
+# below.
+#
+# The 2026-11 expansion adds biotech trade press (GEN, Endpoints, STAT) for
+# funding/company coverage and university/institute press offices (MIT,
+# Harvard Gazette, Salk, Babraham) for institutional research news.
 FEEDS = [
     ("longevitytech", "Longevity.Technology",
      "https://longevity.technology/feed/", "curl/8.4.0"),
@@ -38,6 +44,24 @@ FEEDS = [
      "https://www.sciencedaily.com/rss/health_medicine.xml", None),
     ("medicalxpress", "Medical Xpress",
      "https://medicalxpress.com/rss-feed/", None),
+    ("gen", "GEN — Genetic Engineering & Biotechnology News",
+     "https://www.genengnews.com/feed/", None),
+    ("endpts", "Endpoints News",
+     "https://endpts.com/feed/",
+     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+     "(KHTML, like Gecko) Chrome/126 Safari/537.36"),
+    ("stat", "STAT News",
+     "https://www.statnews.com/feed/", None),
+    ("mitbio", "MIT News — Biology",
+     "https://news.mit.edu/rss/topic/biology", None),
+    ("mitmed", "MIT News — Medicine",
+     "https://news.mit.edu/rss/topic/medicine", None),
+    ("harvardgazette", "Harvard Gazette",
+     "https://news.harvard.edu/gazette/rss", None),
+    ("salk", "Salk Institute for Biological Studies",
+     "https://www.salk.edu/feed/", None),
+    ("babraham", "Babraham Institute",
+     "https://www.babraham.ac.uk/rss.xml", None),
 ]
 
 # Honest identifying default for the feeds that don't care.
@@ -195,6 +219,20 @@ def parse_feed(xml_text: str, source: str) -> List[Dict[str, Any]]:
     return records
 
 
+def already_landed(item_id: str) -> bool:
+    """True if the canonical URL already landed under any feed.
+
+    Outlets run overlapping feeds (MIT's biology and medicine topics carry
+    the same article), so dedupe is by canonical URL across all feeds, not
+    just within one — first feed to land it wins, later copies are skipped.
+    """
+    from .. import config
+    return any(
+        (config.LANDING_DIR / feed_slug / f"{item_id}.json").exists()
+        for feed_slug, _n, _u, _ua in FEEDS
+    )
+
+
 def fetch_feed(slug: str, name: str, url: str, days: int, limit: int,
                user_agent: Optional[str] = None) -> Dict[str, Any]:
     """Fetch one feed and land its recent items; returns a run summary."""
@@ -219,7 +257,12 @@ def fetch_feed(slug: str, name: str, url: str, days: int, limit: int,
         if record["published"] and record["published"] < cutoff.isoformat():
             continue
         path = config.LANDING_DIR / slug / f"{record['item_id']}.json"
-        is_new = not path.exists()
+        if path.exists():
+            is_new = False  # same feed re-fetch — overwrite in place
+        elif already_landed(record["item_id"]):
+            continue  # another feed already landed this canonical URL
+        else:
+            is_new = True
         record["outlet"] = name
         land_item(slug, record["item_id"], record)
         summary["total"] += 1

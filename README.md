@@ -4,8 +4,10 @@
 
 A pipeline gathers the field's evidence from free public sources — PubMed,
 ClinicalTrials.gov, Europe PMC preprints and non-Medline open access, the
-ISRCTN and EU CTIS trial registries, the DrugAge lifespan-assay dataset, plus
-tier-2 news coverage from verifiable outlets — normalizes, dedupes, and
+ISRCTN and EU CTIS trial registries, the DrugAge lifespan-assay dataset, the
+NIH RePORTER and EU CORDIS grant databases (who is funded to study what, and
+how much), plus tier-2 news coverage from verifiable outlets (trade press
+and university/institute research news included) — normalizes, dedupes, and
 relevance-tags every item. A website publishes the
 result: a browsable domain map into entity pages, item pages with full source
 attribution, corpus search, and (publishing from M3) a weekly digest of what
@@ -20,7 +22,7 @@ The full plan and decision log live in [`docs/PLAN.md`](docs/PLAN.md).
 |---|---|---|
 | M0 | Source adapters (PubMed, ClinicalTrials.gov), raw JSON landing zone, dedupe | **Done** |
 | M1 | Postgres store, relevance gate, web app skeleton (domain map, item pages, search) | **Done** |
-| M2 | News outlets (tier 2), peptides domain, gate v1.2, multi-agent research layer, coverage expansion (Europe PMC, DrugAge, ISRCTN, EU CTIS) | **Done** |
+| M2 | News outlets (tier 2), peptides domain, gate v1.2, multi-agent research layer, coverage expansion (Europe PMC, DrugAge, ISRCTN, EU CTIS), funding + institution sources (NIH RePORTER, EU CORDIS, trade press + university feeds) | **Done** |
 | M3 | Weekly digest as the landing page's top section | Planned |
 | M4 | Entity pages (compounds, trials, orgs) — the digest's destinations | Planned |
 | M5 | LLM extraction pass with labeled, provenance-safe fields | Planned |
@@ -28,41 +30,48 @@ The full plan and decision log live in [`docs/PLAN.md`](docs/PLAN.md).
 
 ## Corpus at a glance
 
-Numbers from the last pipeline run (2026-11-08); they grow with every fetch.
+Numbers from the last pipeline run (2026-11-09); they grow with every fetch.
 Everything below is live query output from the store, not an estimate.
 
-**6,155 items ingested, 4,564 passing the relevance gate (74%).** Every item
+**18,903 items ingested, 11,666 passing the relevance gate (62%).** Every item
 is kept for auditability; only gate-passing items appear in public views.
 
 By source:
 
 | Source | Tier | Relevant | Total |
 |---|---|---|---|
+| NIH RePORTER (US grants) | 1 | 5,605 | 8,271 |
 | DrugAge lifespan assays | 2 | 3,416 | 3,416 |
+| EU CORDIS (European grants) | 1 | 1,496 | 4,405 |
 | Europe PMC (preprints + non-Medline OA) | 1 | 620 | 1,867 |
 | PubMed | 1 | 252 | 327 |
 | ClinicalTrials.gov | 1 | 145 | 259 |
 | EU Clinical Trials Information System | 1 | 67 | 83 |
 | ISRCTN Registry | 1 | 33 | 73 |
-| News outlets (5 feeds, combined) | 2 | 31 | 130 |
+| News outlets (13 feeds, combined) | 2 | 32 | 202 |
 
 By domain (an item can carry more than one):
 
 | Domain | Relevant items |
 |---|---|
 | Lifespan experiments (DrugAge) | 3,416 |
-| Geroscience | 232 |
-| Longevity | 216 |
-| Peptides | 208 |
-| Senolytics | 131 |
-| Pharmacological interventions | 123 |
-| Biomarkers | 74 |
+| Longevity | 2,538 |
+| Geroscience | 1,753 |
+| Peptides | 1,098 |
+| Senolytics | 931 |
+| Pharmacological interventions | 759 |
+| Rejuvenation | 535 |
+| Biomarkers | 520 |
 | Clinical evidence | 61 |
-| Rejuvenation | 49 |
 | Diet & restriction | 23 |
 
 What the corpus contains:
 
+- **7,101 relevant grant records** answering "who is funded to study what":
+  5,605 NIH project-years (FY 2026–27, ~$3.6B in obligations) across 544
+  institutions and every NIH institute that funds aging science; 1,496 EU
+  projects from CORDIS — 676 signed and ongoing, 746 closed, 74 terminated.
+  Each renders as a funding record (agency, amount, institution, PI, period).
 - **722 preprints** (bioRxiv/medRxiv and peers) — earliest signal, each
   flagged "not peer reviewed" on its item page; the other 1,145 Europe PMC
   items are non-Medline open-access articles.
@@ -72,13 +81,18 @@ What the corpus contains:
 - **245 relevant trial records** across ClinicalTrials.gov, ISRCTN, and EU
   CTIS — 102 currently recruiting and 47 about to start.
 - **Coverage windows:** PubMed accumulates since the first run (back to
-  2026-01-01); Europe PMC fetches a trailing 30-day window; DrugAge re-lands
-  its full snapshot every run; the registries refresh trials updated in the
-  window.
+  2026-01-01); Europe PMC fetches a trailing 30-day window; the registries
+  refresh trials updated in the window. DrugAge re-lands its full snapshot
+  every run; NIH RePORTER re-lands the current + previous fiscal year (its
+  API has no date-added filter — verified); EU CORDIS re-lands its matched
+  projects the same way. Landing is idempotent, so a re-fetch overwrites
+  instead of duplicating.
 - **Relevance gate:** `keyword-v1.2` — 61 aging/peptide term patterns, 15
   materials false-positive hints, 47 strong terms that override the hints.
-  The 1,591 excluded items are kept in the store and reachable by slug, just
-  not listed publicly.
+  The 7,237 excluded items are kept in the store and reachable by slug, just
+  not listed publicly. Known precision cost: ~1% of relevant items match only
+  the demographic word "aged" (trial-eligibility language like "subjects aged
+  18–65"), recorded in the plan as a possible gate v1.3 refinement.
 
 ## Principles
 
@@ -110,7 +124,8 @@ What the corpus contains:
 pipeline/        Python — fetch, landing zone, relevance gate, Postgres store
   dontdie/         the package
     sources/         pubmed.py, ctgov.py, rss.py, europemc.py, drugage.py,
-                     isrctn.py, ctis.py (one adapter per source)
+                     isrctn.py, ctis.py, reporter.py, cordis.py (one adapter
+                     per source)
     agents/          outlets.py (allowlists), research.py (research agents)
     landing.py       raw JSON landing zone (the dedupe mechanism)
     relevance.py     deterministic keyword-v1.2 gate
@@ -144,9 +159,11 @@ python3 -m dontdie fetch --source pubmed --days 7 --limit 50
 python3 -m dontdie fetch --source longevitytech   # any news feed slug
 ```
 
-Sources: `pubmed`, `ctgov`, `europemc`, `isrctn`, `ctis`, `drugage`, plus the
-news feeds `longevitytech`, `lifespanio`, `fightaging`, `sciencedaily`,
-`medicalxpress`.
+Sources: `pubmed`, `ctgov`, `europemc`, `isrctn`, `ctis`, `drugage`,
+`reporter` (NIH grants), `cordis` (EU grants), plus the news feeds
+`longevitytech`, `lifespanio`, `fightaging`, `sciencedaily`, `medicalxpress`,
+`gen` (GEN), `endpts` (Endpoints News), `stat` (STAT News), `mitbio` / `mitmed`
+(MIT News), `harvardgazette`, `salk`, `babraham`.
 
 - Europe PMC fetches preprints (bioRxiv/medRxiv and peers) and non-Medline
   open-access articles — never Medline records, which are PubMed's job.
@@ -155,6 +172,10 @@ news feeds `longevitytech`, `lifespanio`, `fightaging`, `sciencedaily`,
   `--days`/`--limit` do not apply to it.
 - The registries fetch trials updated in the window (ISRCTN via its XML API,
   EU CTIS via its public JSON API); WHO ICTRP itself is skipped on licensing.
+- NIH RePORTER lands up to `--limit` project-years per domain query for the
+  current + previous fiscal year (the API exposes no date-added filter);
+  EU CORDIS re-lands its matched projects like DrugAge. Both are idempotent
+  re-lands over the landing zone.
 
 - The landing zone lives in `pipeline/state/` (gitignored), with a
   `fetch_log.jsonl` of every run.
@@ -236,12 +257,13 @@ Without `DATABASE_URL` the site builds and runs with an honest
 ## Attribution & licensing
 
 PubMed abstracts are publisher-copyrighted, redistributed under NCBI's terms
-with attribution and link-back. ClinicalTrials.gov data is US-government
-public domain. ISRCTN and EU CTIS registry records are public data, linked to
-their registries. DrugAge data (Human Ageing Genomic Resources) is reused
-under CC BY 3.0 with link-back. News items are tier-2 coverage: only a short
-summary is stored, the article stays with its publisher, and item pages point
-at the primary source. Preprints are shown with a "not peer reviewed" flag.
-LLM-generated research notes record their model, and LLM extraction
+with attribution and link-back. ClinicalTrials.gov and NIH RePORTER data are
+US-government public domain. ISRCTN and EU CTIS registry records are public
+data, linked to their registries. EU CORDIS project data is reused under
+CC BY 4.0 with link-back. DrugAge data (Human Ageing Genomic Resources) is
+reused under CC BY 3.0 with link-back. News items are tier-2 coverage: only a
+short summary is stored, the article stays with its publisher, and item pages
+point at the primary source. Preprints are shown with a "not peer reviewed"
+flag. LLM-generated research notes record their model, and LLM extraction
 (M5) will be visibly labeled as generated. Never mirrored: paywalled full
 text.

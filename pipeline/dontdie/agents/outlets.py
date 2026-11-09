@@ -27,6 +27,11 @@ NEWS_OUTLETS = {
     "endpts.com": "Endpoints News",
     "eurekalert.org": "EurekAlert! (institutional press releases)",
     "newscientist.com": "New Scientist",
+    # Institutional press offices — feeds the pipeline now ingests directly.
+    "news.mit.edu": "MIT News",
+    "news.harvard.edu": "Harvard Gazette",
+    "salk.edu": "Salk Institute",
+    "babraham.ac.uk": "Babraham Institute",
 }
 
 # Primary sources: journals, indexes, trial registries, preprint servers.

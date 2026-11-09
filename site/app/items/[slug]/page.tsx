@@ -56,8 +56,9 @@ export default async function ItemPage({
   const isPreprint = item.source === "europemc" && item.raw.preprint;
   const isCtgov = item.source === "ctgov";
   const isRegistry = item.source === "isrctn" || item.source === "ctis";
+  const isGrant = item.source === "reporter" || item.source === "cordis";
   const isNews = !(isPubmed || isDrugage || item.source === "europemc" ||
-                   isCtgov || isRegistry);
+                   isCtgov || isRegistry || isGrant);
 
   const body = isDrugage
     ? item.raw.summary
@@ -67,7 +68,15 @@ export default async function ItemPage({
         ? item.raw.summary
         : isCtgov
           ? item.raw.brief_summary
-          : item.raw.abstract; // ISRCTN / CTIS: conditions + interventions
+          : item.raw.abstract; // ISRCTN / CTIS / RePORTER / CORDIS
+
+  const usd = (n?: number) =>
+    n == null ? null : `$${n.toLocaleString("en-US")}`;
+  const eur = (n?: string | number) => {
+    if (n == null || n === "") return null;
+    const v = Number(n);
+    return Number.isFinite(v) ? `€${v.toLocaleString("en-US")}` : null;
+  };
 
   const attribution = isPubmed
     ? ["Abstract text © its publisher, redistributed with attribution under NCBI terms — ", "PubMed"]
@@ -83,8 +92,12 @@ export default async function ItemPage({
               ? ["Registry record from the EU Clinical Trials Information System (public data) — ", "the EU Clinical Trials Information System"]
               : isDrugage
                 ? ["Data from DrugAge (Human Ageing Genomic Resources), reused under CC BY 3.0 — ", "DrugAge"]
-                : ["News coverage from a tier-2 outlet — it summarizes primary evidence; only this short summary is stored, the article © its publisher — ",
-                   item.raw.outlet ?? item.source];
+                : item.source === "reporter"
+                  ? ["Grant record from NIH RePORTER (US-government public domain) — ", "NIH RePORTER"]
+                  : item.source === "cordis"
+                    ? ["Project data from the EU CORDIS database, reused under CC BY 4.0 — ", "CORDIS"]
+                    : ["News coverage from a tier-2 outlet — it summarizes primary evidence; only this short summary is stored, the article © its publisher — ",
+                       item.raw.outlet ?? item.source];
 
   return (
     <main>
@@ -114,7 +127,11 @@ export default async function ItemPage({
                   ? `n=${item.raw.enrollment}`
                   : null,
               ].filter(Boolean).join(" · ")
-            : null,
+            : isGrant
+              ? (item.source === "reporter"
+                  ? item.raw.agency
+                  : item.raw.status) ?? ""
+              : null,
         ])}
       </p>
 
@@ -190,6 +207,58 @@ export default async function ItemPage({
             ) : null}
           </dl>
           {body ? <p className="abstract">{body}</p> : null}
+        </section>
+      ) : isGrant ? (
+        <section>
+          <h2>Funding record</h2>
+          {item.source === "reporter" ? (
+            <dl className="facts">
+              <div><dt>Funding agency</dt>
+                <dd>{item.raw.agency || "NIH"}</dd></div>
+              <div><dt>Award</dt>
+                <dd>{usd(item.raw.award_amount) || "—"}
+                  {item.raw.fiscal_year ? ` (FY ${item.raw.fiscal_year})` : ""}</dd></div>
+              {item.raw.award_type ? (
+                <div><dt>Award type</dt><dd>{item.raw.award_type}</dd></div>
+              ) : null}
+              <div><dt>Institution</dt>
+                <dd>{row([item.raw.institution,
+                           item.raw.org_city, item.raw.org_state]) || "—"}</dd></div>
+              <div><dt>Principal investigator</dt>
+                <dd>{(item.raw.pi_names ?? []).join(", ") || "—"}</dd></div>
+              <div><dt>Project period</dt>
+                <dd>{row([item.raw.project_start_date,
+                          item.raw.project_end_date]) || "—"}</dd></div>
+              <div><dt>Active</dt>
+                <dd>{item.raw.is_active ? "Yes" : "No"}</dd></div>
+              {item.raw.project_num ? (
+                <div><dt>Project number</dt><dd>{item.raw.project_num}</dd></div>
+              ) : null}
+            </dl>
+          ) : (
+            <dl className="facts">
+              <div><dt>Programme</dt>
+                <dd>Horizon Europe / EU research funding</dd></div>
+              <div><dt>Status</dt>
+                <dd>{item.raw.status || "—"}</dd></div>
+              <div><dt>EC contribution</dt>
+                <dd>{eur(item.raw.ec_contribution) || "—"}</dd></div>
+              <div><dt>Total cost</dt>
+                <dd>{eur(item.raw.total_cost) || "—"}</dd></div>
+              <div><dt>Project period</dt>
+                <dd>{row([item.raw.start_date, item.raw.end_date]) || "—"}</dd></div>
+              {item.raw.acronym ? (
+                <div><dt>Acronym</dt><dd>{item.raw.acronym}</dd></div>
+              ) : null}
+            </dl>
+          )}
+          {body ? (
+            <p className="abstract">{body}</p>
+          ) : null}
+          <p className="meta">
+            A funded grant record — evidence of what money is going where,
+            not of results. See the project&apos;s publications in the corpus.
+          </p>
         </section>
       ) : body ? (
         <section>

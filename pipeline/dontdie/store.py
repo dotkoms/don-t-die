@@ -32,6 +32,10 @@ SEED_SOURCES = [
     # study) — tier 2, like the news outlets.
     ("drugage", "DrugAge (Human Ageing Genomic Resources)",
      "https://genomics.senescence.info/drugs/", 2),
+    # Funding/grant sources are primary structured registries of who got
+    # funded for what — tier 1.
+    ("reporter", "NIH RePORTER", "https://reporter.nih.gov/", 1),
+    ("cordis", "EU CORDIS", "https://cordis.europa.eu/", 1),
 ]
 
 

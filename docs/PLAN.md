@@ -48,16 +48,32 @@ Tier 1 — primary, structured, machine-readable:
 - **ISRCTN Registry** (built, keyless XML API) + **EU Clinical Trials
   Information System / CTIS** (built, keyless JSON API) — registry coverage
   beyond the US. WHO ICTRP itself rejected on licensing (decision 9).
+- **NIH RePORTER** (built, keyless v2 API) — US grants: agency, amount,
+  institution, PI, abstract per project-year. The old
+  api.reporter.research.gov host is DNS-dead; the canonical host is
+  api.reporter.nih.gov. No date-added filter exists (verified — the criteria
+  are silently ignored), so the adapter re-lands the current + previous
+  fiscal year per query each run.
+- **EU CORDIS** (built, keyless) — EU research projects (objective, cost, EC
+  contribution, status); data reused under CC BY 4.0. The legacy REST API
+  retired in 2026; the live surface is the portal's own JSON search
+  (`/search/en?format=json&q=…`), queried inside `/project/objective` and
+  re-landed full-snapshot like DrugAge.
 - **OpenAlex** — scholarly metadata graph: citations, authors, institutions; good
   for "who is building on X" queries.
 - **Semantic Scholar API** — citation counts, influential citations, S2 papers.
-- **NIH RePORTER** — grants (who is getting money to study what).
 - **FDA** — drug approvals (drugs@fda), meeting docs.
 
 Tier 2 — derived/community, needs careful provenance:
 
 - RSS (built, keyless): Longevity.Technology, Lifespan.io, Fight Aging!,
-  ScienceDaily (health/medicine), Medical Xpress
+  ScienceDaily (health/medicine), Medical Xpress — plus the decision-10
+  expansion: GEN, Endpoints News, STAT News (trade press) and MIT News
+  (biology/medicine), Harvard Gazette, Salk Institute, Babraham Institute
+  (university/institute research news). Cross-feed canonical-URL dedupe;
+  Endpoints News is the single browser-UA exception (its WAF 403s every
+  honest identifying UA). Salk and Babraham feeds are dormant (latest posts
+  2020 / Oct 2025) but live and cheap to poll.
 - **DrugAge** (built, keyless) — curated lifespan-assay dataset, CC BY 3.0,
   `lifespan-data` domain; every row cites its PubMed study. Geroprotectors
   would join it here if its site returns.
@@ -253,6 +269,53 @@ All eight decisions closed (2026-11-08).
 
 All nine decisions closed (2026-11-08).
 
+**Decided (2026-11-09):**
+
+10. **Funding and institution sources.** The corpus answered "what is being
+   studied" but not "who is paying for it" and "who is doing it." A live
+   keyless-API audit (Nov 8–9) picked two grant registries and eight feeds;
+   company-funding *databases* (Crunchbase, PitchBook) stayed tier 3 — paid,
+   and already listed there.
+   - **NIH RePORTER v2** (tier 1, US public domain, keyless) — one item per
+     funded project-year: agency, award amount, institution, PIs, abstract.
+     Old hosts (api.reporter.research.gov, reporternih.gov) are DNS-dead;
+     the canonical host is `api.reporter.nih.gov`. The API ignores
+     date-added criteria (verified), so there is no window query: the
+     adapter re-lands the current + previous fiscal year per domain query
+     each run — idempotent by the landing zone. First run landed 8,271
+     project-years (5,605 relevant), FY 2026–27, ~$3.6B in obligations
+     across 544 institutions.
+   - **EU CORDIS** (tier 1, CC BY 4.0, keyless) — EU research projects
+     (objective, EC contribution, total cost, status), via the portal's
+     internal JSON search after the legacy REST API retired in 2026;
+     queried inside `/project/objective`, re-landed full-snapshot like
+     DrugAge. Single-result queries return `hit` as a dict, not a list
+     (handled). 4,405 projects landed, 1,496 relevant.
+   - **Trade press + institutional research news** (tier 2, keyless RSS) —
+     GEN, Endpoints News, STAT News for funding/company coverage; MIT News
+     (biology + medicine topics), Harvard Gazette, Salk, Babraham for
+     university/institute research. Outlets' overlapping feeds (MIT's two
+     topics carry the same article) dedupe by canonical URL across feeds —
+     first feed to land it wins. Dead ends probed and documented: Fierce
+     Biotech (Cloudflare), BioSpace (no RSS), Buck/Mayo/Stanford/USC/UCSF/
+     AFAR/SENS (no usable feeds), EurekAlert (RSS dead since Dec 2023),
+     NIA (RSS 404). Salk and Babraham feeds are live but dormant.
+   - **Site**: grant items render as a funding record (agency, award,
+     institution, PI, period for RePORTER; status, EC contribution, cost
+     for CORDIS) with the honest caveat that a grant is evidence of money
+     going somewhere, not of results. Research agents' citation allowlist
+     now includes the institutional press offices the pipeline ingests.
+   - **Known precision cost, measured**: ~1% of relevant items (127 in the
+     grant sources) match only the demographic word "aged"
+     (trial-eligibility language, e.g. "subjects aged 18–65"); the same
+     class already existed in trial sources (48 items before). A gate
+     refinement (v1.3, e.g. discounting "aged" when it is the sole match
+     adjacent to a number range) is a possible later decision — recorded
+     here rather than fixed mid-expansion, because gate changes ripple
+     across every source.
+
+All ten decisions closed (2026-11-09).
+
 ## 7. Milestones
 
 Revised for a public product:
@@ -262,12 +325,14 @@ Revised for a public product:
 - **M1 — done, merged to main.** Normalized item schema + relevance tagging
   + Postgres store **+ public web app skeleton: item pages, search,
   per-domain browse**.
-- **M2 — done (this branch).** Tier-2 news outlets via RSS (5 feeds,
+- **M2 — done (this branch).** Tier-2 news outlets via RSS (13 feeds,
   keyless), the peptides domain (widened in the coverage expansion),
   relevance gate v1.2, the multi-agent research layer (decisions 7–8),
-  and the coverage expansion (decision 9): Europe PMC preprints +
+  the coverage expansion (decision 9): Europe PMC preprints +
   non-Medline OA, the DrugAge lifespan-assay dataset (`lifespan-data`
-  domain), and ISRCTN + EU CTIS registry coverage.
+  domain), and ISRCTN + EU CTIS registry coverage; and the funding +
+  institution expansion (decision 10): NIH RePORTER and EU CORDIS grant
+  records plus trade-press and university research feeds.
 - M3: editorial digest v1 ("what changed this week") as the landing page's top
   section + domain-map browse.
 - M4: entity pages (compounds, trials, orgs) — moved up: the digest's links

@@ -1,5 +1,5 @@
 from . import (  # noqa: F401
-    ctgov, ctis, drugage, europemc, isrctn, pubmed, rss,
+    cordis, ctgov, ctis, drugage, europemc, isrctn, pubmed, reporter, rss,
 )
 
 SOURCES = {
@@ -10,4 +10,6 @@ SOURCES = {
     drugage.SOURCE: drugage.fetch,
     isrctn.SOURCE: isrctn.fetch,
     ctis.SOURCE: ctis.fetch,
+    reporter.SOURCE: reporter.fetch,
+    cordis.SOURCE: cordis.fetch,
 }

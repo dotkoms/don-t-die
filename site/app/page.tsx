@@ -34,8 +34,8 @@ export default async function Home() {
       <h1>don&apos;t die</h1>
       <p className="tagline">
         A public knowledge base for life-extension medical science — gathered
-        from PubMed, ClinicalTrials.gov and verifiable news outlets, tagged,
-        and open to browse.
+        from PubMed, trial registries, grant databases and verifiable news
+        outlets, tagged, and open to browse.
       </p>
 
       {domainCounts === null ? (

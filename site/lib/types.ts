@@ -51,5 +51,22 @@ export type Item = {
     age_group?: string;
     registration_date?: string;
     decision_date?: string;
+    // Grants / funded projects (NIH RePORTER, EU CORDIS).
+    agency?: string;
+    award_amount?: number;
+    award_type?: string;
+    fiscal_year?: number;
+    project_num?: string;
+    institution?: string;
+    org_city?: string;
+    org_state?: string;
+    pi_names?: string[];
+    project_start_date?: string;
+    project_end_date?: string;
+    is_active?: boolean;
+    acronym?: string;
+    end_date?: string;
+    total_cost?: string | number;
+    ec_contribution?: string | number;
   };
 };

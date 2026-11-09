@@ -84,3 +84,28 @@ CTIS_QUERIES = [
     ("peptides", "tesamorelin"),
     ("peptides", "thymosin"),
 ]
+
+# NIH RePORTER full-text search takes the same OR/phrase syntax as the
+# registry sources, so the shared recall terms work as-is. RePORTER has no
+# date-added filter (verified: date_added criteria are silently ignored), so
+# the adapter lands the current fiscal year per query each run.
+REPORTER_QUERIES = _REGISTRY_TERMS
+
+# EU CORDIS searches inside /project/objective with quoted OR clauses; terms
+# without the objective field could not match. Multi-word phrases are quoted
+# the same as single words.
+CORDIS_QUERIES = [
+    ("geroscience", ["aging", "geroscience", "biological aging"]),
+    ("senolytics", ["senescence", "senolytic", "senescent"]),
+    ("interventions-pharma",
+     ["rapamycin", "metformin", "nicotinamide", "spermidine", "acarbose",
+      "fisetin"]),
+    ("rejuvenation",
+     ["reprogramming", "rejuvenation", "plasma dilution", "young plasma"]),
+    ("biomarkers", ["epigenetic clock", "biological age", "aging biomarker"]),
+    ("longevity", ["longevity", "life extension", "lifespan"]),
+    ("peptides",
+     ["BPC-157", "epitalon", "MOTS-c", "humanin", "elamipretide",
+      "semaglutide", "tirzepatide", "GLP-1", "tesamorelin", "ipamorelin",
+      "thymosin"]),
+]
