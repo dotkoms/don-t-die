@@ -36,6 +36,16 @@ SEED_SOURCES = [
     # funded for what — tier 1.
     ("reporter", "NIH RePORTER", "https://reporter.nih.gov/", 1),
     ("cordis", "EU CORDIS", "https://cordis.europa.eu/", 1),
+    ("gtr", "UKRI Gateway to Research", "https://gtr.ukri.org/", 1),
+    # The other HAGR curated datasets (GenAge aging genes, CellAge
+    # senescence genes, AnAge species longevity) are tier 2 like DrugAge:
+    # curated secondary data, each row citing its source.
+    ("genage", "GenAge (Human Ageing Genomic Resources)",
+     "https://genomics.senescence.info/genes/", 2),
+    ("cellage", "CellAge (Human Ageing Genomic Resources)",
+     "https://genomics.senescence.info/cells/", 2),
+    ("anage", "AnAge (Human Ageing Genomic Resources)",
+     "https://genomics.senescence.info/species/", 2),
 ]
 
 

@@ -61,7 +61,10 @@ def test_migrate_idempotent(dsn):
     first = store.migrate(dsn)
     second = store.migrate(dsn)
     assert second == []
-    assert set(first) <= {"0001_init.sql", "0002_relevance.sql", "0003_research_notes.sql"}
+    assert set(first) <= {
+        "0001_init.sql", "0002_relevance.sql", "0003_research_notes.sql",
+        "0004_integrity.sql",
+    }
 
 
 def test_load_upserts_and_dedupes(dsn, migrated, landing_dir):

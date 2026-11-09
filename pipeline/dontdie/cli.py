@@ -54,15 +54,32 @@ def cmd_load(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_integrity(args: argparse.Namespace) -> int:
+    """Retraction Watch pass: flag corpus items that have been retracted."""
+    from . import integrity
+
+    stats = integrity.refresh()
+    print(
+        f"integrity: {stats['retraction_records']} retraction records, "
+        f"{stats['checked']} corpus items checked, "
+        f"{stats['flagged']} flagged"
+    )
+    landing.append_fetch_log({"command": "integrity", "stats": stats})
+    return 0
+
+
 def cmd_run(args: argparse.Namespace) -> int:
-    """fetch + load — the cron entrypoint."""
+    """fetch + load + integrity — the cron entrypoint."""
     fetch_args = argparse.Namespace(
         sources=args.sources, days=args.days, limit=args.limit
     )
     status = cmd_fetch(fetch_args)
     if status != 0:
         return status
-    return cmd_load(args)
+    status = cmd_load(args)
+    if status != 0:
+        return status
+    return cmd_integrity(args)
 
 
 def main(argv: Optional[List[str]] = None) -> int:
@@ -71,8 +88,14 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     p_fetch = sub.add_parser("fetch", help="fetch from all or selected sources")
     p_load = sub.add_parser("load", help="load the landing zone into Postgres")
+    p_integrity = sub.add_parser(
+        "integrity",
+        help="Retraction Watch pass: flag retracted corpus items",
+    )
     p_migrate = sub.add_parser("migrate", help="apply pending migrations")
-    p_run = sub.add_parser("run", help="fetch then load (cron entrypoint)")
+    p_run = sub.add_parser(
+        "run", help="fetch then load then integrity (cron entrypoint)"
+    )
     p_research = sub.add_parser(
         "research", help="multi-agent research note for a target (dry run)"
     )
@@ -90,6 +113,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         p.add_argument("--limit", type=int, default=100, help="per domain query")
     p_fetch.set_defaults(func=cmd_fetch)
     p_load.set_defaults(func=cmd_load)
+    p_integrity.set_defaults(func=cmd_integrity)
     p_migrate.set_defaults(func=cmd_migrate)
     p_run.set_defaults(func=cmd_run)
     p_research.set_defaults(func=cmd_research)

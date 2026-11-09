@@ -20,7 +20,9 @@ export default async function ItemPage({
   const { slug } = await params;
   const rows = await query<Item>(
     `SELECT slug, source, source_id, title, url, published, is_relevant,
-            relevance_terms, relevance_method, raw
+            relevance_terms, relevance_method,
+            is_retracted, retraction_nature, retraction_reason,
+            retraction_date, retraction_url, raw
      FROM items WHERE slug = $1`,
     [slug],
   );
@@ -53,12 +55,19 @@ export default async function ItemPage({
 
   const isPubmed = item.source === "pubmed";
   const isDrugage = item.source === "drugage";
+  const isGenage = item.source === "genage";
+  const isCellage = item.source === "cellage";
+  const isAnage = item.source === "anage";
+  const isCurated = isDrugage || isGenage || isCellage || isAnage;
   const isPreprint = item.source === "europemc" && item.raw.preprint;
   const isCtgov = item.source === "ctgov";
   const isRegistry = item.source === "isrctn" || item.source === "ctis";
-  const isGrant = item.source === "reporter" || item.source === "cordis";
+  const isGrant =
+    item.source === "reporter" || item.source === "cordis" ||
+    item.source === "gtr";
   const isNews = !(isPubmed || isDrugage || item.source === "europemc" ||
-                   isCtgov || isRegistry || isGrant);
+                   isCtgov || isRegistry || isGrant || isGenage ||
+                   isCellage || isAnage);
 
   const body = isDrugage
     ? item.raw.summary
@@ -68,7 +77,7 @@ export default async function ItemPage({
         ? item.raw.summary
         : isCtgov
           ? item.raw.brief_summary
-          : item.raw.abstract; // ISRCTN / CTIS / RePORTER / CORDIS
+          : item.raw.abstract; // ISRCTN / CTIS / RePORTER / CORDIS / GtR
 
   const usd = (n?: number) =>
     n == null ? null : `$${n.toLocaleString("en-US")}`;
@@ -77,6 +86,8 @@ export default async function ItemPage({
     const v = Number(n);
     return Number.isFinite(v) ? `€${v.toLocaleString("en-US")}` : null;
   };
+  const gbp = (n?: number) =>
+    n == null ? null : `£${n.toLocaleString("en-GB")}`;
 
   const attribution = isPubmed
     ? ["Abstract text © its publisher, redistributed with attribution under NCBI terms — ", "PubMed"]
@@ -92,12 +103,20 @@ export default async function ItemPage({
               ? ["Registry record from the EU Clinical Trials Information System (public data) — ", "the EU Clinical Trials Information System"]
               : isDrugage
                 ? ["Data from DrugAge (Human Ageing Genomic Resources), reused under CC BY 3.0 — ", "DrugAge"]
-                : item.source === "reporter"
-                  ? ["Grant record from NIH RePORTER (US-government public domain) — ", "NIH RePORTER"]
-                  : item.source === "cordis"
-                    ? ["Project data from the EU CORDIS database, reused under CC BY 4.0 — ", "CORDIS"]
-                    : ["News coverage from a tier-2 outlet — it summarizes primary evidence; only this short summary is stored, the article © its publisher — ",
-                       item.raw.outlet ?? item.source];
+                : isGenage
+                  ? ["Data from GenAge (Human Ageing Genomic Resources), reused under CC BY 3.0 — ", "GenAge"]
+                  : isCellage
+                    ? ["Data from CellAge (Human Ageing Genomic Resources), reused under CC BY 3.0 — ", "CellAge"]
+                    : isAnage
+                      ? ["Data from AnAge (Human Ageing Genomic Resources), reused under CC BY 3.0 — ", "AnAge"]
+                      : item.source === "reporter"
+                        ? ["Grant record from NIH RePORTER (US-government public domain) — ", "NIH RePORTER"]
+                        : item.source === "cordis"
+                          ? ["Project data from the EU CORDIS database, reused under CC BY 4.0 — ", "CORDIS"]
+                          : item.source === "gtr"
+                            ? ["Project data from UKRI Gateway to Research (public data) — ", "UKRI GtR"]
+                            : ["News coverage from a tier-2 outlet — it summarizes primary evidence; only this short summary is stored, the article © its publisher — ",
+                               item.raw.outlet ?? item.source];
 
   return (
     <main>
@@ -111,6 +130,21 @@ export default async function ItemPage({
       {isPreprint ? (
         <p className="callout">
           Preprint — a first report that has not been peer reviewed.
+        </p>
+      ) : null}
+
+      {item.is_retracted ? (
+        <p className="callout">
+          {item.retraction_nature ?? "Retracted"} by the journal
+          {item.retraction_reason ? ` — ${item.retraction_reason}` : ""}
+          {item.retraction_date ? ` (${item.retraction_date})` : ""}. Treat
+          this record as withdrawn.
+          {item.retraction_url ? (
+            <>
+              {" "}
+              <a href={item.retraction_url}>View the notice</a>.
+            </>
+          ) : null}
         </p>
       ) : null}
 
@@ -128,9 +162,9 @@ export default async function ItemPage({
                   : null,
               ].filter(Boolean).join(" · ")
             : isGrant
-              ? (item.source === "reporter"
-                  ? item.raw.agency
-                  : item.raw.status) ?? ""
+              ? (item.source === "cordis"
+                  ? item.raw.status
+                  : item.raw.agency ?? item.raw.status) ?? ""
               : null,
         ])}
       </p>
@@ -235,6 +269,33 @@ export default async function ItemPage({
                 <div><dt>Project number</dt><dd>{item.raw.project_num}</dd></div>
               ) : null}
             </dl>
+          ) : item.source === "gtr" ? (
+            <dl className="facts">
+              <div><dt>Funding council</dt>
+                <dd>{item.raw.agency || "UKRI"}</dd></div>
+              <div><dt>Award</dt>
+                <dd>{gbp(item.raw.award_amount) || "—"}</dd></div>
+              {item.raw.grant_reference ? (
+                <div><dt>Grant reference</dt>
+                  <dd>{item.raw.grant_reference}</dd></div>
+              ) : null}
+              {item.raw.grant_category ? (
+                <div><dt>Category</dt><dd>{item.raw.grant_category}</dd></div>
+              ) : null}
+              <div><dt>Institution</dt>
+                <dd>{item.raw.institution || "—"}</dd></div>
+              <div><dt>Principal investigator</dt>
+                <dd>{(item.raw.pi_names ?? []).join(", ") || "—"}</dd></div>
+              <div><dt>Project period</dt>
+                <dd>{row([item.raw.project_start_date,
+                          item.raw.project_end_date]) || "—"}</dd></div>
+              <div><dt>Status</dt>
+                <dd>{item.raw.status || "—"}</dd></div>
+              {(item.raw.research_topics ?? []).length > 0 ? (
+                <div><dt>Research topics</dt>
+                  <dd>{(item.raw.research_topics ?? []).join(", ")}</dd></div>
+              ) : null}
+            </dl>
           ) : (
             <dl className="facts">
               <div><dt>Programme</dt>
@@ -259,6 +320,101 @@ export default async function ItemPage({
             A funded grant record — evidence of what money is going where,
             not of results. See the project&apos;s publications in the corpus.
           </p>
+        </section>
+      ) : isGenage ? (
+        <section>
+          <h2>Aging gene record</h2>
+          <dl className="facts">
+            <div><dt>Gene</dt>
+              <dd>{row([item.raw.gene_symbol, item.raw.gene_name]) || "—"}</dd>
+            </div>
+            {item.raw.dataset === "human" ? (
+              <>
+                {item.raw.evidence ? (
+                  <div><dt>Evidence</dt><dd>{item.raw.evidence}</dd></div>
+                ) : null}
+                {item.raw.uniprot ? (
+                  <div><dt>UniProt</dt><dd>{item.raw.uniprot}</dd></div>
+                ) : null}
+              </>
+            ) : (
+              <>
+                <div><dt>Organism</dt>
+                  <dd>{item.raw.organism || "—"}</dd></div>
+                {item.raw.longevity_influence ? (
+                  <div><dt>Longevity influence</dt>
+                    <dd>{item.raw.longevity_influence}</dd></div>
+                ) : null}
+                {item.raw.lifespan_effect ? (
+                  <div><dt>Lifespan effect</dt>
+                    <dd>{item.raw.lifespan_effect}</dd></div>
+                ) : null}
+                {item.raw.avg_lifespan_change_percent ? (
+                  <div><dt>Avg lifespan change</dt>
+                    <dd>{item.raw.avg_lifespan_change_percent}</dd></div>
+                ) : null}
+              </>
+            )}
+          </dl>
+          {body ? <p className="abstract">{body}</p> : null}
+        </section>
+      ) : isCellage ? (
+        <section>
+          <h2>Senescence gene record</h2>
+          <dl className="facts">
+            <div><dt>Gene</dt>
+              <dd>{row([item.raw.gene_symbol, item.raw.gene_name]) || "—"}</dd>
+            </div>
+            <div><dt>Effect on senescence</dt>
+              <dd>{item.raw.senescence_effect || "—"}</dd></div>
+            {item.raw.senescence_type ? (
+              <div><dt>Senescence type</dt>
+                <dd>{item.raw.senescence_type}</dd></div>
+            ) : null}
+            {item.raw.cancer_cell ? (
+              <div><dt>Cancer cell</dt><dd>{item.raw.cancer_cell}</dd></div>
+            ) : null}
+          </dl>
+          {body ? <p className="abstract">{body}</p> : null}
+          {item.raw.pubmed_id ? (
+            <p className="meta">
+              Underlying study:{" "}
+              <a href={`https://pubmed.ncbi.nlm.nih.gov/${item.raw.pubmed_id}/`}>
+                PubMed {item.raw.pubmed_id}
+              </a>
+            </p>
+          ) : null}
+        </section>
+      ) : isAnage ? (
+        <section>
+          <h2>Species longevity record</h2>
+          <dl className="facts">
+            <div><dt>Species</dt>
+              <dd>{row([item.raw.species, item.raw.common_name]) || "—"}</dd>
+            </div>
+            <div><dt>Maximum longevity</dt>
+              <dd>{item.raw.max_longevity_years
+                ? `${item.raw.max_longevity_years} years` : "—"}</dd></div>
+            {row([item.raw.taxon_class, item.raw.taxon_order,
+                  item.raw.taxon_family]) ? (
+              <div><dt>Taxonomy</dt>
+                <dd>{row([item.raw.taxon_class, item.raw.taxon_order,
+                           item.raw.taxon_family])}</dd></div>
+            ) : null}
+            {item.raw.adult_weight_g ? (
+              <div><dt>Adult weight</dt>
+                <dd>{Number(item.raw.adult_weight_g).toLocaleString("en-US")} g
+                </dd></div>
+            ) : null}
+            {item.raw.specimen_origin ? (
+              <div><dt>Specimen origin</dt>
+                <dd>{item.raw.specimen_origin}</dd></div>
+            ) : null}
+            {item.raw.data_quality ? (
+              <div><dt>Data quality</dt><dd>{item.raw.data_quality}</dd></div>
+            ) : null}
+          </dl>
+          {body ? <p className="abstract">{body}</p> : null}
         </section>
       ) : body ? (
         <section>

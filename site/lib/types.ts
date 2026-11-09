@@ -8,6 +8,11 @@ export type Item = {
   is_relevant: boolean;
   relevance_terms: string[];
   relevance_method?: string;
+  is_retracted?: boolean;
+  retraction_nature?: string | null;
+  retraction_reason?: string | null;
+  retraction_date?: string | null;
+  retraction_url?: string | null;
   raw: {
     authors?: string[];
     journal?: string;
@@ -68,5 +73,31 @@ export type Item = {
     end_date?: string;
     total_cost?: string | number;
     ec_contribution?: string | number;
+    // UKRI GtR grants (award_amount is GBP — formatted as £).
+    grant_reference?: string;
+    grant_category?: string;
+    research_topics?: string[];
+    // GenAge aging genes + CellAge senescence genes (HAGR, CC BY 3.0).
+    gene_symbol?: string;
+    gene_name?: string;
+    entrez_id?: string;
+    uniprot?: string;
+    evidence?: string;
+    dataset?: string;
+    organism?: string;
+    lifespan_effect?: string;
+    longevity_influence?: string;
+    cancer_cell?: string;
+    senescence_type?: string;
+    senescence_effect?: string;
+    // AnAge species longevity records.
+    common_name?: string;
+    taxon_class?: string;
+    taxon_order?: string;
+    taxon_family?: string;
+    max_longevity_years?: string;
+    adult_weight_g?: string;
+    specimen_origin?: string;
+    data_quality?: string;
   };
 };

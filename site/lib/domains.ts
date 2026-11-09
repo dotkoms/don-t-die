@@ -53,7 +53,13 @@ export const DOMAINS: { slug: string; name: string; blurb: string }[] = [
     slug: "lifespan-data",
     name: "Lifespan experiments",
     blurb:
-      "DrugAge-curated lifespan assays: compound, species, dose, and the measured change.",
+      "Curated lifespan data: DrugAge compound assays and AnAge species longevity records.",
+  },
+  {
+    slug: "genetics-data",
+    name: "Longevity genetics",
+    blurb:
+      "Curated gene datasets: GenAge aging genes and CellAge cellular senescence genes (HAGR).",
   },
 ];
 

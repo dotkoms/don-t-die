@@ -316,6 +316,58 @@ All nine decisions closed (2026-11-08).
 
 All ten decisions closed (2026-11-09).
 
+11. **Everything else that is free, part 1: UKRI GtR, Retraction Watch,
+   GenAge + CellAge + AnAge.** A second live keyless audit (Nov 9) swept the
+   remaining free sources; these four shipped. Deferred items are recorded
+   below with reasons.
+   - **UKRI Gateway to Research** (tier 1, public data, keyless) — the UK's
+     RePORTER/CORDIS: every project UKRI councils (BBSRC, MRC, AHRC, …) have
+     funded. UKRI launched a keyless JSON search API on 4 Nov 2026; the
+     legacy `/api/projects?term=` endpoint ignores the term and returns 25
+     hits with no pagination (verified — unusable). The search endpoint
+     truncates (`abstractText` null, status null — verified), so the adapter
+     is **two-phase**: term searches collect grant references, then each
+     unique project is fetched from `/api/projects?ref=<ref>` for the full
+     record (abstract, technical summary, status, fund). GtR dates are epoch
+     milliseconds; award values are GBP (site formats £). "ageing" is queried
+     alongside "aging" — UK database, no stemming. Bursts occasionally 503;
+     one backed-off retry. Full-snapshot re-land like RePORTER (no date
+     filter exists).
+   - **Retraction Watch integrity pass** — not a corpus source: nothing
+     lands. The Retraction Watch Database (maintained by Crossref, CC0,
+     updated every working day) is one ~73k-row CSV matched against the
+     corpus by normalized DOI and PMID; matching items get flag columns
+     (`is_retracted`, nature, reason, date, notice url — migration 0004).
+     Full recompute each run: flags clear before today's matches are
+     written, so a reinstatement un-flags. `python3 -m dontdie integrity`,
+     and `run` (the cron entrypoint) is now fetch + load + integrity — a
+     paper can be retracted years after it landed.
+   - **GenAge, CellAge, AnAge** (tier 2, HAGR, CC BY 3.0) — the rest of the
+     Human Ageing Genomic Resources family alongside DrugAge: GenAge human
+     aging genes + model-organism longevity genes (new `genetics-data`
+     domain), CellAge cellular-senescence genes (`genetics-data`), AnAge
+     species maximum-longevity records (under `lifespan-data`). All are
+     full-snapshot re-lands; AnAge taxonomy rows without a longevity value
+     are skipped. Download paths verified at build time: `genes/
+     human_genes.zip`, `genes/models_genes.zip`, `cells/cellAge.zip`,
+     `species/dataset.zip`. Gate outcome, deliberate: GenAge model rows
+     whose own influence annotation makes no longevity claim ("Necessary
+     for fitness", "Unclear", "Unannotated" — 557 of 2,205) get titles
+     without a gate term and stay excluded-but-auditable, exactly like any
+     other source; the alternative (stuffing "longevity" into every title)
+     would over-claim rows the dataset itself doesn't annotate.
+   - **Site**: GtR grants render as a funding record (council, £ award,
+     grant reference, institution, PI, period, status, research topics);
+     the three datasets get per-source fact sections; any retracted item
+     shows a callout with the notice link.
+   - **Deferred, with reasons**: LongevityMap and SynergyAge — no
+     downloadable bulk data found (browser-only); GenDR (diet) and
+     cellSignatures — enrichment rather than corpus rows; DrugCentral,
+     OpenAlex, openFDA, arXiv — real but M4-era entity-page material,
+     awaiting their own decision. X/Twitter — not honestly pullable.
+
+All eleven decisions closed (2026-11-09).
+
 ## 7. Milestones
 
 Revised for a public product:
@@ -330,9 +382,11 @@ Revised for a public product:
   relevance gate v1.2, the multi-agent research layer (decisions 7–8),
   the coverage expansion (decision 9): Europe PMC preprints +
   non-Medline OA, the DrugAge lifespan-assay dataset (`lifespan-data`
-  domain), and ISRCTN + EU CTIS registry coverage; and the funding +
+  domain), and ISRCTN + EU CTIS registry coverage; the funding +
   institution expansion (decision 10): NIH RePORTER and EU CORDIS grant
-  records plus trade-press and university research feeds.
+  records plus trade-press and university research feeds; and the free-
+  source sweep (decision 11): UKRI GtR grants, the Retraction Watch
+  integrity pass, and the GenAge / CellAge / AnAge curated datasets.
 - M3: editorial digest v1 ("what changed this week") as the landing page's top
   section + domain-map browse.
 - M4: entity pages (compounds, trials, orgs) — moved up: the digest's links

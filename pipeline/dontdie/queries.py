@@ -109,3 +109,11 @@ CORDIS_QUERIES = [
       "semaglutide", "tirzepatide", "GLP-1", "tesamorelin", "ipamorelin",
       "thymosin"]),
 ]
+
+# UKRI GtR's search takes one term per request (like CTIS), so the CORDIS
+# term lists are flattened. "ageing" is added alongside "aging" because GtR
+# is a UK database and full-text search does not stem spellings.
+GTR_QUERIES = [
+    (domain, term)
+    for domain, terms in CORDIS_QUERIES for term in terms
+] + [("geroscience", "ageing")]
