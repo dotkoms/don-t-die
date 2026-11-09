@@ -22,6 +22,16 @@ SEED_SOURCES = [
     ("ctgov", "ClinicalTrials.gov", "https://clinicaltrials.gov/", 1),
     # News outlets are tier 2: derived reporting, never primary sources.
     *[(slug, name, url, 2) for slug, name, url, _ua in rss.FEEDS],
+    # Europe PMC preprints + non-Medline OA are primary literature (tier 1);
+    # the registries are primary registries (tier 1).
+    ("europemc", "Europe PMC", "https://europepmc.org/", 1),
+    ("isrctn", "ISRCTN Registry", "https://www.isrctn.com/", 1),
+    ("ctis", "EU Clinical Trials Information System",
+     "https://euclinicaltrials.eu/", 1),
+    # DrugAge is a curated secondary dataset (each row cites its PubMed
+    # study) — tier 2, like the news outlets.
+    ("drugage", "DrugAge (Human Ageing Genomic Resources)",
+     "https://genomics.senescence.info/drugs/", 2),
 ]
 
 

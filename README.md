@@ -2,9 +2,11 @@
 
 **A public knowledge base for life-extension medical science.**
 
-A pipeline gathers the field's evidence from free public sources — PubMed and
-ClinicalTrials.gov, plus tier-2 news coverage from verifiable outlets —
-normalizes, dedupes, and relevance-tags every item. A website publishes the
+A pipeline gathers the field's evidence from free public sources — PubMed,
+ClinicalTrials.gov, Europe PMC preprints and non-Medline open access, the
+ISRCTN and EU CTIS trial registries, the DrugAge lifespan-assay dataset, plus
+tier-2 news coverage from verifiable outlets — normalizes, dedupes, and
+relevance-tags every item. A website publishes the
 result: a browsable domain map into entity pages, item pages with full source
 attribution, corpus search, and (publishing from M3) a weekly digest of what
 actually changed. An on-demand multi-agent research layer (opt-in, see below)
@@ -18,7 +20,7 @@ The full plan and decision log live in [`docs/PLAN.md`](docs/PLAN.md).
 |---|---|---|
 | M0 | Source adapters (PubMed, ClinicalTrials.gov), raw JSON landing zone, dedupe | **Done** |
 | M1 | Postgres store, relevance gate, web app skeleton (domain map, item pages, search) | **Done** |
-| M2 | News outlets (tier 2), peptides domain, gate v1.1, multi-agent research layer | **Done** |
+| M2 | News outlets (tier 2), peptides domain, gate v1.2, multi-agent research layer, coverage expansion (Europe PMC, DrugAge, ISRCTN, EU CTIS) | **Done** |
 | M3 | Weekly digest as the landing page's top section | Planned |
 | M4 | Entity pages (compounds, trials, orgs) — the digest's destinations | Planned |
 | M5 | LLM extraction pass with labeled, provenance-safe fields | Planned |
@@ -32,16 +34,19 @@ The full plan and decision log live in [`docs/PLAN.md`](docs/PLAN.md).
   its stable id (PMID, NCT id) — a re-fetch overwrites the same path instead of
   duplicating.
 - **Honest labeling.** Relevance is a transparent keyword gate
-  (`keyword-v1.1`), not a model, and says so. LLM-generated research notes
+  (`keyword-v1.2`), not a model, and says so. LLM-generated research notes
   record their generating model; LLM-extracted fields (M5) will live in a
   separate table with model + date, never merged with source truth. A
-  mouse result is never presented as a human result.
+  mouse result is never presented as a human result, and a preprint is
+  flagged as not peer reviewed.
 - **News is tier 2, never primary.** Conventional outlets are ingested via
   RSS with provenance flags; item pages mark them "news coverage (tier 2)"
-  and point at the primary source.
+  and point at the primary source. DrugAge is tier 2 the same way: a curated
+  dataset whose every row cites its PubMed study.
 - **Attribution.** PubMed abstracts are publisher-copyrighted and redistributed
   under NCBI's terms with link-back; ClinicalTrials.gov data is US-government
-  public domain. Every item page credits and links its source.
+  public domain; DrugAge data is reused under CC BY 3.0. Every item page
+  credits and links its source.
 - **Free tier.** Vercel (site) + Neon (Postgres) + GitHub Actions (daily cron);
   the pieces are coupled only by the connection string.
 
@@ -50,10 +55,11 @@ The full plan and decision log live in [`docs/PLAN.md`](docs/PLAN.md).
 ```
 pipeline/        Python — fetch, landing zone, relevance gate, Postgres store
   dontdie/         the package
-    sources/         pubmed.py, ctgov.py, rss.py (one adapter per source)
+    sources/         pubmed.py, ctgov.py, rss.py, europemc.py, drugage.py,
+                     isrctn.py, ctis.py (one adapter per source)
     agents/          outlets.py (allowlists), research.py (research agents)
     landing.py       raw JSON landing zone (the dedupe mechanism)
-    relevance.py     deterministic keyword-v1.1 gate
+    relevance.py     deterministic keyword-v1.2 gate
     store.py         migrations + idempotent Postgres upserts
     queries.py       domain queries from the plan's domain map
     cli.py           migrate / fetch / load / run / research
@@ -84,8 +90,17 @@ python3 -m dontdie fetch --source pubmed --days 7 --limit 50
 python3 -m dontdie fetch --source longevitytech   # any news feed slug
 ```
 
-Sources: `pubmed`, `ctgov`, plus the news feeds `longevitytech`,
-`lifespanio`, `fightaging`, `sciencedaily`, `medicalxpress`.
+Sources: `pubmed`, `ctgov`, `europemc`, `isrctn`, `ctis`, `drugage`, plus the
+news feeds `longevitytech`, `lifespanio`, `fightaging`, `sciencedaily`,
+`medicalxpress`.
+
+- Europe PMC fetches preprints (bioRxiv/medRxiv and peers) and non-Medline
+  open-access articles — never Medline records, which are PubMed's job.
+  Preprints are flagged "not peer reviewed" on the item page.
+- DrugAge re-lands its full 3,400-assay snapshot each run (idempotent);
+  `--days`/`--limit` do not apply to it.
+- The registries fetch trials updated in the window (ISRCTN via its XML API,
+  EU CTIS via its public JSON API); WHO ICTRP itself is skipped on licensing.
 
 - The landing zone lives in `pipeline/state/` (gitignored), with a
   `fetch_log.jsonl` of every run.
@@ -147,7 +162,7 @@ npm run dev    # http://localhost:3000
 | `/` | The domain map, search box, recently gathered items |
 | `/domains/[slug]` | Relevant items in one domain (senolytics, biomarkers, …) |
 | `/items/[slug]` | One item: metadata, abstract/summary, attribution, gate disclosure |
-| `/search?q=…` | Corpus search over titles and abstracts |
+| `/search?q=…` | Corpus search over titles and abstracts/summaries |
 
 Without `DATABASE_URL` the site builds and runs with an honest
 "store not connected" state rather than a guess.
@@ -168,8 +183,11 @@ Without `DATABASE_URL` the site builds and runs with an honest
 
 PubMed abstracts are publisher-copyrighted, redistributed under NCBI's terms
 with attribution and link-back. ClinicalTrials.gov data is US-government
-public domain. News items are tier-2 coverage: only a short summary is stored,
-the article stays with its publisher, and item pages point at the primary
-source. LLM-generated research notes record their model, and LLM extraction
+public domain. ISRCTN and EU CTIS registry records are public data, linked to
+their registries. DrugAge data (Human Ageing Genomic Resources) is reused
+under CC BY 3.0 with link-back. News items are tier-2 coverage: only a short
+summary is stored, the article stays with its publisher, and item pages point
+at the primary source. Preprints are shown with a "not peer reviewed" flag.
+LLM-generated research notes record their model, and LLM extraction
 (M5) will be visibly labeled as generated. Never mirrored: paywalled full
 text.

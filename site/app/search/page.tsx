@@ -27,7 +27,8 @@ export default async function SearchPage({
          WHERE is_relevant
            AND (title ILIKE $1
                 OR COALESCE(raw->>'abstract', '') ILIKE $1
-                OR COALESCE(raw->>'brief_summary', '') ILIKE $1)
+                OR COALESCE(raw->>'brief_summary', '') ILIKE $1
+                OR COALESCE(raw->>'summary', '') ILIKE $1)
          ORDER BY COALESCE(published, updated_at::date) DESC NULLS LAST
          LIMIT 50`,
         [`%${trimmed}%`],

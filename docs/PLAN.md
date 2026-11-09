@@ -40,12 +40,16 @@ requiring a paid API key.
 
 Tier 1 — primary, structured, machine-readable:
 
-- **PubMed / NCBI E-utilities** — the spine. Daily new publications by domain query.
-- **ClinicalTrials.gov API v2** — trials by condition/intervention keyword.
-- **bioRxiv + medRxiv API** — preprints; earliest signal, lowest certainty.
+- **PubMed / NCBI E-utilities** — the spine. Daily new publications by domain query. (built)
+- **ClinicalTrials.gov API v2** — trials by condition/intervention keyword. (built)
+- **Europe PMC** (built, keyless) — `SRC:PPR` preprints (bioRxiv/medRxiv and
+  peers) plus non-Medline open-access articles; Medline stays PubMed's job so
+  nothing is double-counted.
+- **ISRCTN Registry** (built, keyless XML API) + **EU Clinical Trials
+  Information System / CTIS** (built, keyless JSON API) — registry coverage
+  beyond the US. WHO ICTRP itself rejected on licensing (decision 9).
 - **OpenAlex** — scholarly metadata graph: citations, authors, institutions; good
   for "who is building on X" queries.
-- **Europe PMC** — full text for open-access subset; better search API than PubMed's.
 - **Semantic Scholar API** — citation counts, influential citations, S2 papers.
 - **NIH RePORTER** — grants (who is getting money to study what).
 - **FDA** — drug approvals (drugs@fda), meeting docs.
@@ -54,6 +58,9 @@ Tier 2 — derived/community, needs careful provenance:
 
 - RSS (built, keyless): Longevity.Technology, Lifespan.io, Fight Aging!,
   ScienceDaily (health/medicine), Medical Xpress
+- **DrugAge** (built, keyless) — curated lifespan-assay dataset, CC BY 3.0,
+  `lifespan-data` domain; every row cites its PubMed study. Geroprotectors
+  would join it here if its site returns.
 - Reddit r/longevity (JSON, no key) — later
 - Company press releases (scraped RSS where offered) — later
 
@@ -211,6 +218,41 @@ Principles:
 
 All eight decisions closed (2026-11-08).
 
+**Decided (2026-11-08):**
+
+9. **Coverage expansion: preprints, non-Medline OA, curated lifespan data,
+   and non-US registries.** A live coverage audit (per-peptide PubMed counts,
+   CT.gov trial counts) found three gap classes; four workstreams close them,
+   all keyless:
+   - **Peptide widening** — the peptide list grew from 12 compounds to the
+     full set circulating in the longevity space (thymosin β4/TB-500,
+     thymosin α1, GHRP-2/-6/hexarelin, SHLP small humanin-like peptides,
+     AOD-9604, selank, semax, dihexa, noopept, carnosine, retatrutide,
+     orforglipron, klotho-derived). The list lives in one shared constant
+     (`PEPTIDE_TERMS`) consumed by every source query; the gate moved to
+     `keyword-v1.2` with the new compounds as strong terms.
+   - **Europe PMC** (`SRC:PPR` preprints + `SRC:PMC AND NOT PMID:*`
+     non-Medline open access) — bioRxiv/medRxiv preprints are the earliest
+     signal and PubMed never covers them; non-Medline PMC articles cover
+     journals Medline skips. Medline records stay PubMed's job (fetching
+     them here would double-count). Preprints are visually flagged "not
+     peer reviewed" on the item page. Tier 1.
+   - **DrugAge** (Human Ageing Genomic Resources, CC BY 3.0) — 3,423
+     curated lifespan assays, one item per experiment, each linking its
+     PubMed study. A new `lifespan-data` domain. Tier 2: it is a curated
+     secondary dataset, like news — every row cites its primary source.
+   - **Registries beyond CT.gov** — ISRCTN (keyless XML API; search for
+     windowing + WHO-format per-trial detail) and EU CTIS (keyless JSON
+     API). WHO ICTRP itself was evaluated and **rejected on licensing**:
+     its web service requires registration and fees and its terms forbid
+     copying/republishing — incompatible with a public knowledge base. The
+     member registries carry the same trials with genuinely open terms.
+     Tier 1. Geroprotectors.org was unreachable during the audit — DrugAge
+     alone ships; Geroprotectors is a possible later addition if it returns.
+     jRCT/ChiCTR/UMIN/CTRI lack keyless APIs — future additions at most.
+
+All nine decisions closed (2026-11-08).
+
 ## 7. Milestones
 
 Revised for a public product:
@@ -221,8 +263,11 @@ Revised for a public product:
   + Postgres store **+ public web app skeleton: item pages, search,
   per-domain browse**.
 - **M2 — done (this branch).** Tier-2 news outlets via RSS (5 feeds,
-  keyless), the peptides domain, relevance gate v1.1, and the multi-agent
-  research layer (decisions 7–8).
+  keyless), the peptides domain (widened in the coverage expansion),
+  relevance gate v1.2, the multi-agent research layer (decisions 7–8),
+  and the coverage expansion (decision 9): Europe PMC preprints +
+  non-Medline OA, the DrugAge lifespan-assay dataset (`lifespan-data`
+  domain), and ISRCTN + EU CTIS registry coverage.
 - M3: editorial digest v1 ("what changed this week") as the landing page's top
   section + domain-map browse.
 - M4: entity pages (compounds, trials, orgs) — moved up: the digest's links

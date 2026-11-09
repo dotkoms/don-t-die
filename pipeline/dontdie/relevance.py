@@ -34,6 +34,14 @@ AGING_TERMS: List[Tuple[str, bool]] = [
     ("elamipretide", True), ("SS-31", True), ("tesamorelin", True),
     ("ipamorelin", True), ("CJC-1295", True), ("semaglutide", True),
     ("tirzepatide", True), ("GLP-1", True), ("glucagon-like peptide", True),
+    # Peptide widening (M2, second pass) — thymosin/GHRP/SHLP families are
+    # matched on the family stem so every member matches; klotho is core
+    # geroscience as well as a peptide-therapy topic.
+    ("thymosin beta", True), ("TB-500", True), ("thymosin alpha", True),
+    ("GHRP", True), ("hexarelin", True), ("SHLP", True), ("AOD-9604", True),
+    ("selank", True), ("semax", True), ("dihexa", True), ("noopept", True),
+    ("carnosine", True), ("retatrutide", True), ("orforglipron", True),
+    ("klotho", True),
 ]
 
 # Strong false-positive sources inside those terms; e.g. "aging" of materials.
@@ -56,6 +64,9 @@ STRONG_TERMS = [
     "bpc-157", "epitalon", "epithalon", "mots-c", "humanin", "ghk-cu",
     "elamipretide", "ss-31", "tesamorelin", "ipamorelin", "cjc-1295",
     "semaglutide", "tirzepatide", "glp-1", "glucagon-like peptide",
+    "thymosin beta", "tb-500", "thymosin alpha", "ghrp", "hexarelin",
+    "shlp", "aod-9604", "selank", "semax", "dihexa", "noopept", "carnosine",
+    "retatrutide", "orforglipron", "klotho",
 ]
 
 _TERM_RE = [
@@ -99,5 +110,5 @@ def tag(record: Dict[str, Any]) -> Dict[str, Any]:
     out = dict(record)
     out["is_relevant"] = is_relevant
     out["relevance_terms"] = matched
-    out["relevance_method"] = "keyword-v1.1"
+    out["relevance_method"] = "keyword-v1.2"
     return out

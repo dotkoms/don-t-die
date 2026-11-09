@@ -49,6 +49,12 @@ export const DOMAINS: { slug: string; name: string; blurb: string }[] = [
     blurb:
       "Longevity-circulating peptides: BPC-157, epitalon, MOTS-c, humanin, elamipretide, GLP-1 agonists.",
   },
+  {
+    slug: "lifespan-data",
+    name: "Lifespan experiments",
+    blurb:
+      "DrugAge-curated lifespan assays: compound, species, dose, and the measured change.",
+  },
 ];
 
 export function domainName(slug: string): string {

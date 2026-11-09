@@ -77,7 +77,7 @@ def test_load_upserts_and_dedupes(dsn, migrated, landing_dir):
                 "pubmed-99990001",
                 "Rapamycin and mouse lifespan",
                 True,
-                "keyword-v1.1",
+                "keyword-v1.2",
             )
             cur.execute(
                 "SELECT domain FROM item_domains "

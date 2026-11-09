@@ -45,8 +45,27 @@ def test_no_terms():
 def test_tag_adds_labeled_fields():
     tagged = tag(_rec("Rapamycin extends mouse lifespan"))
     assert tagged["is_relevant"] is True
-    assert tagged["relevance_method"] == "keyword-v1.1"
+    assert tagged["relevance_method"] == "keyword-v1.2"
     assert "rapamycin" in tagged["relevance_terms"]
+
+
+def test_widened_peptide_terms_match():
+    for term in ("thymosin beta-4", "TB-500", "GHRP-6", "hexarelin",
+                 "SHLP2", "AOD-9604", "selank", "semax", "dihexa",
+                 "noopept", "carnosine", "retatrutide", "orforglipron"):
+        ok, _ = classify(_rec(f"A study of {term} in aged mice"))
+        assert ok, term
+
+
+def test_peptide_terms_override_materials_hints():
+    ok, _ = classify(_rec(
+        "Thymosin beta-4 and dental coating adhesion: a review"))
+    assert ok  # thymosin is a strong term; the resin hint does not exclude
+
+
+def test_klotho_matches():
+    ok, terms = classify(_rec("Soluble klotho and aging kidneys"))
+    assert ok and "klotho" in terms
 
 
 def test_peptide_compound_is_relevant():

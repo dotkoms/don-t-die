@@ -96,7 +96,7 @@ export default async function Home() {
           source (NCBI terms; ClinicalTrials.gov is US-government public
           domain; news is summarized, never mirrored, always link-back).
           Relevance tagging is a transparent keyword gate,{" "}
-          <code>keyword-v1.1</code> — not a model. News items are tier-2
+          <code>keyword-v1.2</code> — not a model. News items are tier-2
           coverage, distinct from primary sources.
         </p>
       </footer>
