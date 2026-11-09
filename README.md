@@ -26,6 +26,60 @@ The full plan and decision log live in [`docs/PLAN.md`](docs/PLAN.md).
 | M5 | LLM extraction pass with labeled, provenance-safe fields | Planned |
 | M6 | Tracking / follow features for visitors | Planned |
 
+## Corpus at a glance
+
+Numbers from the last pipeline run (2026-11-08); they grow with every fetch.
+Everything below is live query output from the store, not an estimate.
+
+**6,155 items ingested, 4,564 passing the relevance gate (74%).** Every item
+is kept for auditability; only gate-passing items appear in public views.
+
+By source:
+
+| Source | Tier | Relevant | Total |
+|---|---|---|---|
+| DrugAge lifespan assays | 2 | 3,416 | 3,416 |
+| Europe PMC (preprints + non-Medline OA) | 1 | 620 | 1,867 |
+| PubMed | 1 | 252 | 327 |
+| ClinicalTrials.gov | 1 | 145 | 259 |
+| EU Clinical Trials Information System | 1 | 67 | 83 |
+| ISRCTN Registry | 1 | 33 | 73 |
+| News outlets (5 feeds, combined) | 2 | 31 | 130 |
+
+By domain (an item can carry more than one):
+
+| Domain | Relevant items |
+|---|---|
+| Lifespan experiments (DrugAge) | 3,416 |
+| Geroscience | 232 |
+| Longevity | 216 |
+| Peptides | 208 |
+| Senolytics | 131 |
+| Pharmacological interventions | 123 |
+| Biomarkers | 74 |
+| Clinical evidence | 61 |
+| Rejuvenation | 49 |
+| Diet & restriction | 23 |
+
+What the corpus contains:
+
+- **722 preprints** (bioRxiv/medRxiv and peers) — earliest signal, each
+  flagged "not peer reviewed" on its item page; the other 1,145 Europe PMC
+  items are non-Medline open-access articles.
+- **3,416 curated lifespan experiments** from DrugAge: 1,046 distinct
+  compounds across 38 species, citing 664 underlying PubMed studies; 164 rows
+  come from the Interventional Testing Program.
+- **245 relevant trial records** across ClinicalTrials.gov, ISRCTN, and EU
+  CTIS — 102 currently recruiting and 47 about to start.
+- **Coverage windows:** PubMed accumulates since the first run (back to
+  2026-01-01); Europe PMC fetches a trailing 30-day window; DrugAge re-lands
+  its full snapshot every run; the registries refresh trials updated in the
+  window.
+- **Relevance gate:** `keyword-v1.2` — 61 aging/peptide term patterns, 15
+  materials false-positive hints, 47 strong terms that override the hints.
+  The 1,591 excluded items are kept in the store and reachable by slug, just
+  not listed publicly.
+
 ## Principles
 
 - **No API keys for a first run.** Everything needed to fetch and browse works

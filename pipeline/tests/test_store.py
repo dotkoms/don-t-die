@@ -9,10 +9,34 @@ pytestmark = pytest.mark.skipif(
 
 from dontdie import store
 
+TEST_DB = "dontdie_test"
 
-@pytest.fixture()
+
+@pytest.fixture(scope="session")
 def dsn():
-    return os.environ["DATABASE_URL"]
+    """A throwaway database — never the one DATABASE_URL points at.
+
+    These tests DELETE all rows from the items table; pointed at a real
+    corpus they would wipe it. So the suite clones DATABASE_URL into a
+    scratch database, runs everything there, and drops it afterwards.
+    """
+    base = os.environ["DATABASE_URL"]
+    admin = store.connect(base)
+    admin.autocommit = True
+    try:
+        with admin.cursor() as cur:
+            cur.execute(f"DROP DATABASE IF EXISTS {TEST_DB}")
+            cur.execute(f"CREATE DATABASE {TEST_DB}")
+    finally:
+        admin.close()
+    yield base.rsplit("/", 1)[0] + f"/{TEST_DB}"
+    cleanup = store.connect(base)
+    cleanup.autocommit = True
+    try:
+        with cleanup.cursor() as cur:
+            cur.execute(f"DROP DATABASE {TEST_DB}")
+    finally:
+        cleanup.close()
 
 
 @pytest.fixture()
