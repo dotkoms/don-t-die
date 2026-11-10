@@ -96,6 +96,70 @@ def cmd_entities(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_extract(args: argparse.Namespace) -> int:
+    """LLM extraction pass. Dry run unless --go; never part of `run`."""
+    from . import extract
+
+    if args.collect is not None:
+        stats = extract.collect(args.collect or None)
+        if stats.get("pending"):
+            print(
+                f"batch {stats['batch_id']}: still {stats['status']} — "
+                "results are not ready; re-run --collect later"
+            )
+            return 0
+        print(
+            f"collect {stats['batch_id']}: {stats['stored']} items stored, "
+            f"{stats['failed']} failed"
+        )
+        landing.append_fetch_log({"command": "extract-collect", "stats": stats})
+        return 0
+
+    model = args.model or extract.MODEL
+    stats = extract.run(
+        go=args.go, model=model, limit=args.limit, batch=args.batch,
+    )
+    if not stats["go"]:
+        print(f"extract dry run — model {stats['model']}")
+        print(
+            f"{stats['pending']} pending items "
+            f"({stats['already']} already extracted with this model)"
+        )
+        print(
+            f"~{stats['input_tokens']:,} input + "
+            f"~{stats['output_tokens']:,} output tokens "
+            f"(list-price estimate): "
+            f"${stats['realtime']:.4f} realtime, "
+            f"${stats['batch']:.4f} via Batch API"
+        )
+        if stats["sample_prompt"]:
+            sample = stats["sample_prompt"]
+            print("\nsample prompt (first item):")
+            print(f"  {sample[:300]}{'…' if len(sample) > 300 else ''}")
+        print(
+            "\nre-run with --go to spend it (realtime), or --go --batch "
+            "for the half-price Batch API backfill"
+        )
+        return 0
+    if stats["batch"]:
+        print(
+            f"batch submitted: {stats['items']} items, "
+            f"batch id(s) {', '.join(stats['batch_ids'])} "
+            "(recorded in state/extraction_batch.json)"
+        )
+        print("results arrive in minutes to hours; collect with --collect")
+        landing.append_fetch_log(
+            {"command": "extract-batch", "stats": stats}
+        )
+        return 0
+    print(
+        f"extract: {stats['extracted']} extracted, {stats['failed']} failed "
+        f"({stats['fields']} fields written)"
+    )
+    landing.append_fetch_log({"command": "extract", "stats": stats})
+    return 1 if stats["failed"] else 0
+
+
 def cmd_run(args: argparse.Namespace) -> int:
     """fetch + load + integrity + digest + entities — the cron entrypoint."""
     fetch_args = argparse.Namespace(
@@ -137,6 +201,32 @@ def main(argv: Optional[List[str]] = None) -> int:
     p_research = sub.add_parser(
         "research", help="multi-agent research note for a target (dry run)"
     )
+    p_extract = sub.add_parser(
+        "extract",
+        help="LLM extraction pass: summarize + tag relevant items "
+             "(dry run by default)",
+    )
+    p_extract.add_argument(
+        "--go", action="store_true",
+        help="actually run the paid LLM job (explicit, per-job approval)",
+    )
+    p_extract.add_argument(
+        "--batch", action="store_true",
+        help="with --go: submit via the Batch API (half price) instead of "
+             "sequential realtime calls",
+    )
+    p_extract.add_argument(
+        "--collect", nargs="?", const="",
+        help="download the results of a submitted batch (free; bare = the "
+             "recorded batch, or pass a batch id)",
+    )
+    p_extract.add_argument(
+        "--limit", type=int, default=None,
+        help="extract at most N items this run",
+    )
+    p_extract.add_argument(
+        "--model", default=None, help="override DD_EXTRACT_MODEL",
+    )
     p_research.add_argument("target", help="research target, e.g. 'BPC-157'")
     p_research.add_argument(
         "--go", action="store_true",
@@ -157,6 +247,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     p_entities.set_defaults(func=cmd_entities)
     p_run.set_defaults(func=cmd_run)
     p_research.set_defaults(func=cmd_research)
+    p_extract.set_defaults(func=cmd_extract)
 
     args = parser.parse_args(argv)
     return args.func(args)

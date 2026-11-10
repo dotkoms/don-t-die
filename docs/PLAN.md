@@ -1,8 +1,8 @@
 # don-t-die — Research & Data Gathering System for Life Extension Medical Science
 
-Status: M0–M4 built (pipeline, site, news + peptides + research agents,
-funding sources, integrity pass, weekly digest, entity pages); this doc is
-the scope of record.
+Status: M0–M5 built (pipeline, site, news + peptides + research agents,
+funding sources, integrity pass, weekly digest, entity pages, extraction
+pass); this doc is the scope of record.
 
 ## 1. What this is
 
@@ -435,7 +435,41 @@ All eleven decisions closed (2026-11-09).
      entity (linked items, most recent first); item pages gain an
      entity-links line; the landing page gains a browse line.
 
-All thirteen decisions closed (2026-11-10).
+14. **Extraction pass: dry-run default, per-model idempotency, batch
+    backfill.** M5 implements decision 5's budget as code
+    (`python3 -m dontdie extract`, never part of `run` — the cron chain stays
+    free and deterministic). Design points:
+   - **Four fields, one row each** in the (existing, empty) `extractions`
+     table: `summary` (one plain-language sentence), `evidence` (a strict
+     enum: human / animal / cell / dataset / registry / grant / other —
+     what makes "a mouse result is never presented as human" checkable),
+     `interventions` (what the record actually studies, max 5), `outcome`
+     (one short phrase). Every row carries its model and timestamp.
+   - **Dry run by default, `--go` as the explicit per-job approval** — the
+     same contract as the research agents. The dry run needs no key and
+     spends nothing: pending count, a list-price cost estimate for realtime
+     and for the Batch API (half price), and the first item's prompt. The
+     current corpus prices at ~$51 realtime / ~$26 batch, inside decision
+     5's $25–50 backfill band.
+   - **Idempotency is per-model**: UNIQUE (item, field) (migration 0007) +
+     ON CONFLICT upsert, and the pending set is "relevant, un-retracted,
+     and not extracted *at the current model*". A re-run is free; bumping
+     `DD_EXTRACT_MODEL` re-extracts everything — an explicit paid decision,
+     not an accident. An invalid response leaves the item pending and
+     retried next run.
+   - **Two modes, two shapes of job**: realtime sequential
+     `messages.create` for the daily trickle (a few dozen items, minutes);
+     `--go --batch` submits the backfill via the Batch API (async, 50%,
+     batch id recorded in a gitignored state file) and `--collect`
+     downloads results when Anthropic reports the batch ended — collection
+     is free, so it needs no `--go`.
+   - **On-page labeling**: item pages render an "AI-extracted summary"
+     section with the generating model and date, a callout stating it is
+     an LLM extraction never merged with the source data above, and the
+     fields in reading order (summary, evidence level, interventions,
+     outcome). Items with no extraction render nothing.
+
+All fourteen decisions closed (2026-11-10).
 
 ## 7. Milestones
 
@@ -467,5 +501,9 @@ Revised for a public product:
   relevant registry record; `/compounds`, `/orgs`, `/trials` + one page per
   entity, entity-links lines on item pages, browse line on the landing
   page. `run` is now fetch + load + integrity + digest + entities.
-- M5: extraction pass + provenance/generated labels, shown on-page.
+- **M5 — done (this branch, stacked on the M4 branch).** Extraction pass
+  (decision 14, implementing decision 5's budget): `python3 -m dontdie
+  extract` — dry run by default, `--go` gated, realtime for the trickle and
+  `--batch`/`--collect` for the half-price backfill; four labeled fields per
+  relevant item, shown on item pages as generated, never source truth.
 - M6: tracking/follow features for visitors.

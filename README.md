@@ -29,7 +29,7 @@ The full plan and decision log live in [`docs/PLAN.md`](docs/PLAN.md).
 | M2 | News outlets (tier 2), peptides domain, gate v1.2, multi-agent research layer, coverage expansion (Europe PMC, DrugAge, ISRCTN, EU CTIS), funding + institution sources (NIH RePORTER, EU CORDIS, trade press + university feeds), free-source sweep (UKRI GtR, Retraction Watch integrity pass, GenAge + CellAge + AnAge) | **Done** |
 | M3 | Weekly digest as the landing page's top section (deterministic, no LLM) | **Done** |
 | M4 | Entity pages (compounds, trials, orgs) — the digest's destinations | **Done** |
-| M5 | LLM extraction pass with labeled, provenance-safe fields | Planned |
+| M5 | LLM extraction pass with labeled, provenance-safe fields | **Done** |
 | M6 | Tracking / follow features for visitors | Planned |
 
 ## Corpus at a glance
@@ -144,8 +144,9 @@ What the corpus contains:
   duplicating.
 - **Honest labeling.** Relevance is a transparent keyword gate
   (`keyword-v1.2`), not a model, and says so. LLM-generated research notes
-  record their generating model; LLM-extracted fields (M5) will live in a
-  separate table with model + date, never merged with source truth. A
+  record their generating model; LLM-extracted fields (M5) live in a
+  separate table with model + date, never merged with source truth, and
+  item pages label them as an AI extraction. A
   mouse result is never presented as a human result, and a preprint is
   flagged as not peer reviewed.
 - **News is tier 2, never primary.** Conventional outlets are ingested via
@@ -173,10 +174,11 @@ pipeline/        Python — fetch, landing zone, relevance gate, Postgres store
     integrity.py     Retraction Watch pass: retraction flags, not a source
     digest.py        deterministic weekly digest builder (no LLM)
     entities.py      deterministic entity linker: compounds, orgs, trials
+    extract.py       LLM extraction pass (opt-in, dry run by default)
     store.py         migrations + idempotent Postgres upserts
     queries.py       domain queries from the plan's domain map
     cli.py           migrate / fetch / load / integrity / digest /
-                     entities / run / research
+                     entities / extract / run / research
   migrations/      SQL migrations — the pipeline owns the schema
   tests/           offline fixture tests + store round-trip tests
 site/            Next.js/TypeScript — the public knowledge base
@@ -202,6 +204,7 @@ python3 -m dontdie load        # landing zone → Postgres, relevance-tagged
 python3 -m dontdie integrity   # Retraction Watch pass: flag retracted items
 python3 -m dontdie digest      # rebuild the weekly digest from the corpus
 python3 -m dontdie entities    # rebuild entity pages: compounds, orgs, trials
+python3 -m dontdie extract    # LLM extraction pass — DRY RUN (opt-in, see below)
 python3 -m dontdie run         # fetch + load + integrity + digest + entities
 
 # finer control:
@@ -246,6 +249,8 @@ Sources: `pubmed`, `ctgov`, `europemc`, `isrctn`, `ctis`, `drugage`,
   generic chemistry); organizations collapse the grant registries' ALL CAPS
   and the sponsors' title case into one page; every relevant registry
   record is a trial entity, with citing corpus items linked to it.
+- `extract` is a paid LLM job and is NEVER part of `run` — see
+  "Extraction pass (opt-in)" below.
 
 - The landing zone lives in `pipeline/state/` (gitignored), with a
   `fetch_log.jsonl` of every run.
@@ -291,6 +296,38 @@ Cost and consent:
 - Results are saved to `research_notes` with the generating model recorded —
   an LLM artifact, labeled as such.
 
+## Extraction pass (opt-in)
+
+`python3 -m dontdie extract` runs the LLM extraction over every relevant,
+un-retracted item that hasn't been extracted yet with the current model —
+one structured read per record, stored as four labeled fields (a
+plain-language `summary`, the `evidence` level — human / animal / cell /
+dataset / registry / grant / other — the `interventions` studied, and the
+`outcome` measured). Item pages render them in an "AI-extracted summary"
+section naming the model and date — clearly generated, never merged with
+the source data.
+
+Cost and consent:
+
+- **Dry run by default.** The command prints the pending count, a
+  list-price cost estimate, and the first item's prompt, and spends
+  nothing. `--go` is required to actually spend — an explicit, per-job
+  approval, never implied. The current corpus (23,757 pending) estimates
+  at ~$51 realtime, ~$26 via the Batch API.
+- **Two shapes of job.** Realtime (`--go`) is sequential and meant for the
+  daily trickle. For the one-time backfill use `--go --batch`: it submits
+  via the Batch API (half price, results in minutes to hours) and records
+  the batch id; `python3 -m dontdie extract --collect` downloads the
+  results when the batch has ended — collection is free.
+- Requires `ANTHROPIC_API_KEY` (opt-in only). Model: Claude Haiku 4.5
+  (`claude-haiku-4-5-20251001`) via `--model` or `DD_EXTRACT_MODEL`.
+- **Idempotent per model.** Items already extracted with the current model
+  are skipped, so a re-run is free; an item whose response failed
+  validation stays pending and is retried. Bumping the model re-extracts
+  everything — an explicit paid decision, not an accident.
+- `extract` is never part of `run`: the cron chain stays free and
+  deterministic.
+
 ## Running the site
 
 Requires Node 20+.
@@ -314,7 +351,7 @@ npm run dev    # http://localhost:3000
 | `/trials` | Every relevant registry record with the items citing it |
 | `/trials/[slug]` | One trial: its registry record and citing corpus items |
 | `/domains/[slug]` | Relevant items in one domain (senolytics, biomarkers, …) |
-| `/items/[slug]` | One item: metadata, abstract/summary, attribution, gate disclosure |
+| `/items/[slug]` | One item: metadata, abstract/summary, attribution, gate disclosure, and (when extracted) the labeled AI-extracted fields |
 | `/search?q=…` | Corpus search over titles and abstracts/summaries |
 
 Without `DATABASE_URL` the site builds and runs with an honest
@@ -346,6 +383,6 @@ Ageing Genomic Resources) are reused under CC BY 3.0 with link-back. The
 Retraction Watch Database is CC0 (Crossref). News items are tier-2 coverage:
 only a short summary is stored, the article stays with its publisher, and
 item pages point at the primary source. Preprints are shown with a "not peer
-reviewed" flag. LLM-generated research notes record their model, and LLM
-extraction (M5) will be visibly labeled as generated. Never mirrored:
-paywalled full text.
+reviewed" flag. LLM-generated research notes record their model, and
+LLM-extracted fields are visibly labeled as generated, with their model and
+date. Never mirrored: paywalled full text.

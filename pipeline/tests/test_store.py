@@ -64,6 +64,7 @@ def test_migrate_idempotent(dsn):
     assert set(first) <= {
         "0001_init.sql", "0002_relevance.sql", "0003_research_notes.sql",
         "0004_integrity.sql", "0005_digest.sql", "0006_entities.sql",
+        "0007_extraction_unique.sql",
     }
 
 

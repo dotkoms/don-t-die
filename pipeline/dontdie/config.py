@@ -18,6 +18,13 @@ LANDING_DIR = Path(os.environ.get("DD_LANDING_DIR", PIPELINE_ROOT / "state" / "l
 # Fetch log, one JSON line per run (gitignored).
 FETCH_LOG = Path(os.environ.get("DD_FETCH_LOG", PIPELINE_ROOT / "state" / "fetch_log.jsonl"))
 
+# The in-flight extraction batch, if one was submitted (gitignored). Batch
+# results stay with Anthropic until collected; this file is the only local
+# trace of the batch id.
+EXTRACT_BATCH = Path(
+    os.environ.get("DD_EXTRACT_BATCH", PIPELINE_ROOT / "state" / "extraction_batch.json")
+)
+
 # Optional NCBI API key (10 req/s instead of 3).
 NCBI_API_KEY = os.environ.get("NCBI_API_KEY")
 
