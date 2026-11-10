@@ -82,15 +82,29 @@ def cmd_digest(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_entities(args: argparse.Namespace) -> int:
+    """Entity pages: rebuild compounds, orgs and trials from the corpus."""
+    from . import entities
+
+    stats = entities.build()
+    print(
+        f"entities: {stats['compounds']} compounds, "
+        f"{stats['orgs']} organizations, {stats['trials']} trials — "
+        f"{stats['links']} item links"
+    )
+    landing.append_fetch_log({"command": "entities", "stats": stats})
+    return 0
+
+
 def cmd_run(args: argparse.Namespace) -> int:
-    """fetch + load + integrity + digest — the cron entrypoint."""
+    """fetch + load + integrity + digest + entities — the cron entrypoint."""
     fetch_args = argparse.Namespace(
         sources=args.sources, days=args.days, limit=args.limit
     )
     status = cmd_fetch(fetch_args)
     if status != 0:
         return status
-    for step in (cmd_load, cmd_integrity, cmd_digest):
+    for step in (cmd_load, cmd_integrity, cmd_digest, cmd_entities):
         status = step(args)
         if status != 0:
             return status
@@ -112,8 +126,13 @@ def main(argv: Optional[List[str]] = None) -> int:
         "digest",
         help="weekly digest: recompute every issue from the corpus",
     )
+    p_entities = sub.add_parser(
+        "entities",
+        help="rebuild entity pages: compounds, organizations, trials",
+    )
     p_run = sub.add_parser(
-        "run", help="fetch then load then integrity then digest (cron entrypoint)"
+        "run",
+        help="fetch, load, integrity, digest, entities (cron entrypoint)",
     )
     p_research = sub.add_parser(
         "research", help="multi-agent research note for a target (dry run)"
@@ -135,6 +154,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     p_integrity.set_defaults(func=cmd_integrity)
     p_migrate.set_defaults(func=cmd_migrate)
     p_digest.set_defaults(func=cmd_digest)
+    p_entities.set_defaults(func=cmd_entities)
     p_run.set_defaults(func=cmd_run)
     p_research.set_defaults(func=cmd_research)
 

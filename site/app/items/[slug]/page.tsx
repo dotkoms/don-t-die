@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { query } from "@/lib/db";
+import { getItemEntities, kindPath } from "@/lib/entities";
 import { sourceLabel } from "@/lib/sourceLabel";
 import type { Item } from "@/lib/types";
 
@@ -53,6 +54,8 @@ export default async function ItemPage({
      )`,
     [slug],
   );
+
+  const linkedEntities = await getItemEntities(slug);
 
   const isPubmed = item.source === "pubmed";
   const isDrugage = item.source === "drugage";
@@ -175,6 +178,16 @@ export default async function ItemPage({
           {(domains ?? []).map((d) => (
             <Link key={d.domain} href={`/domains/${d.domain}`}>
               {d.domain}
+            </Link>
+          ))}
+        </p>
+      ) : null}
+
+      {linkedEntities && linkedEntities.length > 0 ? (
+        <p className="domains-on-item">
+          {(linkedEntities ?? []).map((e) => (
+            <Link key={`${e.kind}/${e.slug}`} href={`${kindPath(e.kind)}/${e.slug}`}>
+              {e.name}
             </Link>
           ))}
         </p>

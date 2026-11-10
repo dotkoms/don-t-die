@@ -1,8 +1,8 @@
 # don-t-die — Research & Data Gathering System for Life Extension Medical Science
 
-Status: M0–M3 built (pipeline, site, news + peptides + research agents,
-funding sources, integrity pass, weekly digest); this doc is the scope of
-record.
+Status: M0–M4 built (pipeline, site, news + peptides + research agents,
+funding sources, integrity pass, weekly digest, entity pages); this doc is
+the scope of record.
 
 ## 1. What this is
 
@@ -402,7 +402,40 @@ All eleven decisions closed (2026-11-09).
      now excludes future-dated and undated items — undated snapshot rows
      (AnAge species re-landed daily) would otherwise crowd it out forever.
 
-All twelve decisions closed (2026-11-09).
+13. **Entity pages: deterministic linking, curated compound vocabulary.**
+    M4's entity pages (compounds, organizations, trials) are derived state,
+    exactly like the digest and the retraction flags: rebuilt from
+    source-truth fields on every pipeline run, no LLM, no fetches
+    (`python3 -m dontdie entities`, last step of `run`). LLM extraction
+    stays M5 and stays separate. Design points, each with a reason:
+   - **Compounds are a curated intervention vocabulary, not the DrugAge
+     compound column.** DrugAge's ~1,046 compounds include generic chemistry
+     ("Glucose", "Ethanol", "Lactic acid", "Paraquat") that would flood
+     abstracts with junk links. The vocabulary is the plan §2 pharmacological
+     list + the M2 peptide gate terms + the GLP-1 family (41 entries, growth
+     is one line). Items link by mention: 1–3-word n-grams of
+     title/abstract/summary fields intersect the name index (hyphen-folded,
+     case-folded). DrugAge rows link additionally by their own `compound`
+     field where it matches the vocabulary (how='assay').
+   - **Organizations** are grant institutions (RePORTER, GtR — ALL CAPS) and
+     trial sponsors (CT.gov, ISRCTN, CTIS — title case). Variants collapse to
+     one slug (`[^a-z0-9]+`→hyphen); the display name prefers a
+     properly-cased variant (most frequent, lexicographic tiebreak for
+     determinism), because the registries disagree about casing but not
+     identity.
+   - **Trials**: every relevant registry record is an entity; corpus items
+     whose text cites a registry id (NCT/ISRCTN/EU CT number regex) link to
+     it (how='citation'), the record itself links with how='record'.
+     Citations resolve after the scan so ordering never decides what links.
+   - **Link priority** when one (item, entity) pair qualifies for several
+     kinds: assay > record > citation > funding > sponsor > mention. An
+     entity exists only with ≥1 link (no empty pages); only relevant,
+     un-retracted items link. Both tables are deleted and rebuilt each run.
+   - **Surfaces**: `/compounds`, `/orgs`, `/trials` indexes + one page per
+     entity (linked items, most recent first); item pages gain an
+     entity-links line; the landing page gains a browse line.
+
+All thirteen decisions closed (2026-11-10).
 
 ## 7. Milestones
 
@@ -423,12 +456,16 @@ Revised for a public product:
   records plus trade-press and university research feeds; and the free-
   source sweep (decision 11): UKRI GtR grants, the Retraction Watch
   integrity pass, and the GenAge / CellAge / AnAge curated datasets.
-- **M3 — done (this branch).** Editorial digest v1 (decision 12): one
+- **M3 — done (feat/m3-weekly-digest).** Editorial digest v1 (decision 12): one
   deterministic issue per ISO week, ranked by the decision-5 order, surfaced
   as the landing page's "This week" section, `/digest` (latest + archive),
   and `/digest/[slug]`; domain-map browse from M1 underneath. `run` is now
   fetch + load + integrity + digest.
-- M4: entity pages (compounds, trials, orgs) — moved up: the digest's links
-  need a destination.
+- **M4 — done (this branch, stacked on the M3 branch).** Entity pages
+  (decision 13): deterministic linking of a curated compound vocabulary,
+  grant institutions + trial sponsors (variant-collapsed), and every
+  relevant registry record; `/compounds`, `/orgs`, `/trials` + one page per
+  entity, entity-links lines on item pages, browse line on the landing
+  page. `run` is now fetch + load + integrity + digest + entities.
 - M5: extraction pass + provenance/generated labels, shown on-page.
 - M6: tracking/follow features for visitors.

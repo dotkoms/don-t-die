@@ -60,6 +60,12 @@ export default async function Home() {
             />
           </form>
 
+          <p className="meta">
+            Browse by entity: <Link href="/compounds">compounds</Link> ·{" "}
+            <Link href="/trials">trials</Link> ·{" "}
+            <Link href="/orgs">organizations</Link>
+          </p>
+
           <h2 id="this-week">This week</h2>
           {digest && lead && lead.length > 0 ? (
             <>

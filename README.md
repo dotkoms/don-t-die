@@ -11,11 +11,12 @@ what, and how much), plus tier-2 news coverage from verifiable outlets (trade
 press and university/institute research news included) — normalizes,
 dedupes, and relevance-tags every item, then runs a Retraction Watch
 integrity pass that flags anything the journals have withdrawn. A website
-publishes the result: a browsable domain map into entity pages, item pages
-with full source attribution, corpus search, and a weekly digest — one
-deterministic issue per ISO week of what actually changed, ranked trials
-first and media echo last. An on-demand multi-agent research layer
-(opt-in, see below) answers questions the scheduled ingestion misses.
+publishes the result: a browsable domain map, entity pages for the compounds,
+organizations and trials the corpus touches, item pages with full source
+attribution, corpus search, and a weekly digest — one deterministic issue
+per ISO week of what actually changed, ranked trials first and media echo
+last. An on-demand multi-agent research layer (opt-in, see below) answers
+questions the scheduled ingestion misses.
 
 The full plan and decision log live in [`docs/PLAN.md`](docs/PLAN.md).
 
@@ -27,7 +28,7 @@ The full plan and decision log live in [`docs/PLAN.md`](docs/PLAN.md).
 | M1 | Postgres store, relevance gate, web app skeleton (domain map, item pages, search) | **Done** |
 | M2 | News outlets (tier 2), peptides domain, gate v1.2, multi-agent research layer, coverage expansion (Europe PMC, DrugAge, ISRCTN, EU CTIS), funding + institution sources (NIH RePORTER, EU CORDIS, trade press + university feeds), free-source sweep (UKRI GtR, Retraction Watch integrity pass, GenAge + CellAge + AnAge) | **Done** |
 | M3 | Weekly digest as the landing page's top section (deterministic, no LLM) | **Done** |
-| M4 | Entity pages (compounds, trials, orgs) — the digest's destinations | Planned |
+| M4 | Entity pages (compounds, trials, orgs) — the digest's destinations | **Done** |
 | M5 | LLM extraction pass with labeled, provenance-safe fields | Planned |
 | M6 | Tracking / follow features for visitors | Planned |
 
@@ -111,6 +112,13 @@ What the corpus contains:
   the pipeline's first fetch; the landing page always leads with the latest
   issue, and the current week's issue says it is still open and updates
   daily.
+- **Entity pages** (M4) linked from every relevant item, rebuilt every run:
+  a curated intervention vocabulary (29 compounds with corpus links today —
+  rapamycin, metformin, the senolytics, the peptides, the GLP-1 family;
+  deliberately not DrugAge's generic-chemistry compound column), 1,502
+  organizations (grant institutions and trial sponsors, name variants
+  collapsed), and all 245 relevant trial records with the items citing
+  them — 12,715 item links in the current build.
 - **245 relevant trial records** across ClinicalTrials.gov, ISRCTN, and EU
   CTIS — 97 recruiting and 46 about to start.
 - **Coverage windows:** PubMed accumulates since the first run (back to
@@ -164,14 +172,17 @@ pipeline/        Python — fetch, landing zone, relevance gate, Postgres store
     relevance.py     deterministic keyword-v1.2 gate
     integrity.py     Retraction Watch pass: retraction flags, not a source
     digest.py        deterministic weekly digest builder (no LLM)
+    entities.py      deterministic entity linker: compounds, orgs, trials
     store.py         migrations + idempotent Postgres upserts
     queries.py       domain queries from the plan's domain map
-    cli.py           migrate / fetch / load / integrity / digest / run / research
+    cli.py           migrate / fetch / load / integrity / digest /
+                     entities / run / research
   migrations/      SQL migrations — the pipeline owns the schema
   tests/           offline fixture tests + store round-trip tests
 site/            Next.js/TypeScript — the public knowledge base
   app/             routes: /, /digest, /digest/[slug], /domains/[slug],
-                   /items/[slug], /search
+                   /compounds, /compounds/[slug], /orgs, /orgs/[slug],
+                   /trials, /trials/[slug], /items/[slug], /search
   lib/             read-only Postgres access, domain map, source labels, types
 .github/workflows/daily-fetch.yml   daily cron (needs DATABASE_URL secret)
 docs/PLAN.md     the plan and decision log
@@ -190,7 +201,8 @@ python3 -m dontdie fetch       # all sources → raw JSON landing zone
 python3 -m dontdie load        # landing zone → Postgres, relevance-tagged
 python3 -m dontdie integrity   # Retraction Watch pass: flag retracted items
 python3 -m dontdie digest      # rebuild the weekly digest from the corpus
-python3 -m dontdie run         # fetch + load + integrity + digest — what the cron runs
+python3 -m dontdie entities    # rebuild entity pages: compounds, orgs, trials
+python3 -m dontdie run         # fetch + load + integrity + digest + entities
 
 # finer control:
 python3 -m dontdie fetch --source pubmed --days 7 --limit 50
@@ -228,6 +240,12 @@ Sources: `pubmed`, `ctgov`, `europemc`, `isrctn`, `ctis`, `drugage`,
   ("what changed while we watched"), one per ISO week; the current week's
   issue stays open and refreshes on every `run`. Undated snapshot datasets
   never appear in a digest — re-landing a snapshot is not a weekly change.
+- `entities` is the same kind of pure recompute: both tables are derived
+  state, emptied and rebuilt every run. Compounds come from a curated
+  intervention vocabulary (not DrugAge's compound column, which is full of
+  generic chemistry); organizations collapse the grant registries' ALL CAPS
+  and the sponsors' title case into one page; every relevant registry
+  record is a trial entity, with citing corpus items linked to it.
 
 - The landing zone lives in `pipeline/state/` (gitignored), with a
   `fetch_log.jsonl` of every run.
@@ -289,6 +307,12 @@ npm run dev    # http://localhost:3000
 | `/` | The latest digest issue ("This week"), the domain map, search box, recently gathered items |
 | `/digest` | The latest weekly issue in full + the archive |
 | `/digest/[slug]` | One issue (e.g. `2026-w45`), sections in domain order, media coverage last |
+| `/compounds` | The intervention vocabulary — every tracked compound with its corpus links |
+| `/compounds/[slug]` | One compound: lifespan assays, papers, trials and grants that mention it |
+| `/orgs` | Funded institutions and trial sponsors, name variants collapsed |
+| `/orgs/[slug]` | One organization: the grants it won and the trials it sponsors |
+| `/trials` | Every relevant registry record with the items citing it |
+| `/trials/[slug]` | One trial: its registry record and citing corpus items |
 | `/domains/[slug]` | Relevant items in one domain (senolytics, biomarkers, …) |
 | `/items/[slug]` | One item: metadata, abstract/summary, attribution, gate disclosure |
 | `/search?q=…` | Corpus search over titles and abstracts/summaries |
@@ -306,8 +330,9 @@ Without `DATABASE_URL` the site builds and runs with an honest
    `DATABASE_URL`, deploy.
 3. **Daily pipeline** — set the repo secret `DATABASE_URL`; the
    `daily-fetch` workflow then runs `migrate` + `run` (fetch + load +
-   integrity + digest) daily at ~06:10 UTC, so the open issue refreshes and
-   the finished week lands. Without the secret it skips itself cleanly.
+   integrity + digest + entities) daily at ~06:10 UTC, so the open issue
+   refreshes and the finished week lands. Without the secret it skips
+   itself cleanly.
 
 ## Attribution & licensing
 
