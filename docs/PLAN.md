@@ -1,7 +1,8 @@
 # don-t-die — Research & Data Gathering System for Life Extension Medical Science
 
-Status: M0–M2 built (pipeline, site, news + peptides + research agents); this
-doc is the scope of record.
+Status: M0–M3 built (pipeline, site, news + peptides + research agents,
+funding sources, integrity pass, weekly digest); this doc is the scope of
+record.
 
 ## 1. What this is
 
@@ -368,6 +369,41 @@ All ten decisions closed (2026-11-09).
 
 All eleven decisions closed (2026-11-09).
 
+12. **The weekly digest: deterministic editorial, no model.** M3 is one
+   editorial issue per ISO calendar week (Mon–Sun, slug `2026-w45`), built by
+   `python3 -m dontdie digest` — a pure recompute over the store, like the
+   retraction flags: delete-and-rebuild every run, no LLM, no fetches. Design
+   points, each with a reason:
+   - **First-fetch floor.** Issues exist only from the pipeline's first
+     fetch (min(items.fetched_at)) onward — "what changed while we watched,"
+     not a fake history. Weeks before it have no issue; weeks after the
+     current week are excluded (a future-dated grant start waits for its
+     week).
+   - **Editorial date.** `published` first; else the registry fields
+     (last_update for trials, registration/decision dates) or the grant's
+     project dates. Curated snapshot datasets (DrugAge/GenAge/CellAge/AnAge)
+     carry no dates and never enter a digest — re-landing a snapshot is not a
+     weekly change.
+   - **Ranking = decision 5's order**, applied per issue: trials →
+     papers → grants → preprints → news, then more gate-term matches
+     first, then newer first. Media echo is always last, never mixed in.
+   - **"Media coverage" section.** News items carry no domain query, so they
+     have no domain rows; instead of dropping them, the issue LEFT JOINs and
+     gives them their own labeled section at the bottom. Domain pages stay
+     primary-only.
+   - **In-progress honesty.** The current week's issue says "still open and
+     updates daily" until its week closes.
+   - **Cadence**: `run` (the cron entrypoint) is now fetch + load +
+     integrity + digest, so each daily run refreshes the open issue and
+     lands the finished one.
+   - **Surfaces**: the landing page's top section ("This week" — latest
+     issue's lead items), `/digest` (latest issue + archive), and
+     `/digest/[slug]` (one issue). The landing "Recently gathered" river
+     now excludes future-dated and undated items — undated snapshot rows
+     (AnAge species re-landed daily) would otherwise crowd it out forever.
+
+All twelve decisions closed (2026-11-09).
+
 ## 7. Milestones
 
 Revised for a public product:
@@ -387,8 +423,11 @@ Revised for a public product:
   records plus trade-press and university research feeds; and the free-
   source sweep (decision 11): UKRI GtR grants, the Retraction Watch
   integrity pass, and the GenAge / CellAge / AnAge curated datasets.
-- M3: editorial digest v1 ("what changed this week") as the landing page's top
-  section + domain-map browse.
+- **M3 — done (this branch).** Editorial digest v1 (decision 12): one
+  deterministic issue per ISO week, ranked by the decision-5 order, surfaced
+  as the landing page's "This week" section, `/digest` (latest + archive),
+  and `/digest/[slug]`; domain-map browse from M1 underneath. `run` is now
+  fetch + load + integrity + digest.
 - M4: entity pages (compounds, trials, orgs) — moved up: the digest's links
   need a destination.
 - M5: extraction pass + provenance/generated labels, shown on-page.

@@ -63,7 +63,7 @@ def test_migrate_idempotent(dsn):
     assert second == []
     assert set(first) <= {
         "0001_init.sql", "0002_relevance.sql", "0003_research_notes.sql",
-        "0004_integrity.sql",
+        "0004_integrity.sql", "0005_digest.sql",
     }
 
 

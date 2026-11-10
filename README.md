@@ -12,9 +12,10 @@ press and university/institute research news included) — normalizes,
 dedupes, and relevance-tags every item, then runs a Retraction Watch
 integrity pass that flags anything the journals have withdrawn. A website
 publishes the result: a browsable domain map into entity pages, item pages
-with full source attribution, corpus search, and (publishing from M3) a
-weekly digest of what actually changed. An on-demand multi-agent research
-layer (opt-in, see below) answers questions the scheduled ingestion misses.
+with full source attribution, corpus search, and a weekly digest — one
+deterministic issue per ISO week of what actually changed, ranked trials
+first and media echo last. An on-demand multi-agent research layer
+(opt-in, see below) answers questions the scheduled ingestion misses.
 
 The full plan and decision log live in [`docs/PLAN.md`](docs/PLAN.md).
 
@@ -25,7 +26,7 @@ The full plan and decision log live in [`docs/PLAN.md`](docs/PLAN.md).
 | M0 | Source adapters (PubMed, ClinicalTrials.gov), raw JSON landing zone, dedupe | **Done** |
 | M1 | Postgres store, relevance gate, web app skeleton (domain map, item pages, search) | **Done** |
 | M2 | News outlets (tier 2), peptides domain, gate v1.2, multi-agent research layer, coverage expansion (Europe PMC, DrugAge, ISRCTN, EU CTIS), funding + institution sources (NIH RePORTER, EU CORDIS, trade press + university feeds), free-source sweep (UKRI GtR, Retraction Watch integrity pass, GenAge + CellAge + AnAge) | **Done** |
-| M3 | Weekly digest as the landing page's top section | Planned |
+| M3 | Weekly digest as the landing page's top section (deterministic, no LLM) | **Done** |
 | M4 | Entity pages (compounds, trials, orgs) — the digest's destinations | Planned |
 | M5 | LLM extraction pass with labeled, provenance-safe fields | Planned |
 | M6 | Tracking / follow features for visitors | Planned |
@@ -35,7 +36,7 @@ The full plan and decision log live in [`docs/PLAN.md`](docs/PLAN.md).
 Numbers from the last pipeline run (2026-11-09); they grow with every fetch.
 Everything below is live query output from the store, not an estimate.
 
-**26,418 items ingested, 18,624 passing the relevance gate (70%).** Every
+**39,558 items ingested, 23,759 passing the relevance gate (60%).** Every
 item is kept for auditability; only gate-passing items appear in public
 views.
 
@@ -44,6 +45,7 @@ By source:
 | Source | Tier | Relevant | Total |
 |---|---|---|---|
 | NIH RePORTER (US grants) | 1 | 5,605 | 8,271 |
+| UKRI Gateway to Research (UK grants) | 1 | 5,135 | 13,140 |
 | AnAge species longevity records | 2 | 4,141 | 4,141 |
 | DrugAge lifespan assays | 2 | 3,416 | 3,416 |
 | GenAge aging genes (human + models) | 2 | 1,951 | 2,508 |
@@ -56,36 +58,35 @@ By source:
 | ISRCTN Registry | 1 | 33 | 73 |
 | News outlets (13 feeds, combined) | 2 | 32 | 202 |
 
-UKRI Gateway to Research (decision 11) ships in this release; its first
-full backfill fetches every unique matched project in detail, so those
-items land with the next load after it completes.
-
 By domain (an item can carry more than one):
 
 | Domain | Relevant items |
 |---|---|
 | Lifespan experiments (DrugAge + AnAge) | 7,557 |
-| Longevity | 2,538 |
+| Longevity | 3,935 |
+| Geroscience | 3,836 |
 | Longevity genetics (GenAge + CellAge) | 2,817 |
-| Geroscience | 1,753 |
-| Peptides | 1,098 |
-| Senolytics | 931 |
-| Pharmacological interventions | 759 |
-| Rejuvenation | 535 |
-| Biomarkers | 520 |
+| Biomarkers | 1,382 |
+| Senolytics | 1,159 |
+| Peptides | 1,151 |
+| Rejuvenation | 954 |
+| Pharmacological interventions | 852 |
 | Clinical evidence | 61 |
 | Diet & restriction | 23 |
 
 What the corpus contains:
 
-- **7,101 relevant grant records** answering "who is funded to study what":
+- **12,236 relevant grant records** answering "who is funded to study what":
   5,605 NIH project-years (FY 2026–27, ~$3.6B in obligations) across 544
   institutions and every NIH institute that funds aging science; 1,496 EU
-  projects from CORDIS — 676 signed and ongoing, 746 closed, 74 terminated.
-  Each renders as a funding record (agency, amount, institution, PI, period).
-- **722 preprints** (bioRxiv/medRxiv and peers) — earliest signal, each
-  flagged "not peer reviewed" on its item page; the other 1,145 Europe PMC
-  items are non-Medline open-access articles.
+  projects from CORDIS — 676 signed and ongoing, 746 closed, 74 terminated;
+  5,135 UKRI GtR projects — £2.15B in recorded awards among gate-passing
+  items (the full 13,140-project land, relevant or not, totals £5.88B and
+  2,369 still-active projects). Each renders as a funding record (agency,
+  amount, institution, PI, period).
+- **488 relevant preprints** (bioRxiv/medRxiv and peers) — earliest signal,
+  each flagged "not peer reviewed" on its item page; the other 132 relevant
+  Europe PMC items are non-Medline open-access articles.
 - **3,416 curated lifespan experiments** from DrugAge: 1,046 distinct
   compounds across 38 species, citing 664 underlying PubMed studies; 164 rows
   come from the Interventional Testing Program.
@@ -102,19 +103,26 @@ What the corpus contains:
   reinstatements, updated every working day) is matched against the corpus
   by DOI and PMID, and any hit is flagged on its item page with the nature,
   reason, date and a link to the notice. Flags fully recompute each run, so
-  a reinstatement un-flags.
+  a reinstatement un-flags. Current corpus: 2 flagged — both CellAge gene
+  entries (USP1, DDB2) whose underlying studies were retracted.
+- **A weekly digest** (M3) rebuilt from the corpus every run, no LLM: one
+  issue per ISO week, "what changed while we watched," ranked trials →
+  papers → funding → preprints → media echo. The first issue is the week of
+  the pipeline's first fetch; the landing page always leads with the latest
+  issue, and the current week's issue says it is still open and updates
+  daily.
 - **245 relevant trial records** across ClinicalTrials.gov, ISRCTN, and EU
-  CTIS — 102 currently recruiting and 47 about to start.
+  CTIS — 97 recruiting and 46 about to start.
 - **Coverage windows:** PubMed accumulates since the first run (back to
   2026-01-01); Europe PMC fetches a trailing 30-day window; the registries
   refresh trials updated in the window. DrugAge re-lands its full snapshot
   every run; NIH RePORTER re-lands the current + previous fiscal year (its
-  API has no date-added filter — verified); EU CORDIS re-lands its matched
-  projects the same way. Landing is idempotent, so a re-fetch overwrites
-  instead of duplicating.
+  API has no date-added filter — verified); EU CORDIS and UKRI GtR re-land
+  their matched projects the same way. Landing is idempotent, so a re-fetch
+  overwrites instead of duplicating.
 - **Relevance gate:** `keyword-v1.2` — 61 aging/peptide term patterns, 15
   materials false-positive hints, 47 strong terms that override the hints.
-  The 7,794 excluded items are kept in the store and reachable by slug, just
+  The 15,799 excluded items are kept in the store and reachable by slug, just
   not listed publicly. Known precision cost: ~1% of relevant items match only
   the demographic word "aged" (trial-eligibility language like "subjects aged
   18–65"), recorded in the plan as a possible gate v1.3 refinement.
@@ -155,13 +163,15 @@ pipeline/        Python — fetch, landing zone, relevance gate, Postgres store
     landing.py       raw JSON landing zone (the dedupe mechanism)
     relevance.py     deterministic keyword-v1.2 gate
     integrity.py     Retraction Watch pass: retraction flags, not a source
+    digest.py        deterministic weekly digest builder (no LLM)
     store.py         migrations + idempotent Postgres upserts
     queries.py       domain queries from the plan's domain map
-    cli.py           migrate / fetch / load / integrity / run / research
+    cli.py           migrate / fetch / load / integrity / digest / run / research
   migrations/      SQL migrations — the pipeline owns the schema
   tests/           offline fixture tests + store round-trip tests
 site/            Next.js/TypeScript — the public knowledge base
-  app/             routes: /, /domains/[slug], /items/[slug], /search
+  app/             routes: /, /digest, /digest/[slug], /domains/[slug],
+                   /items/[slug], /search
   lib/             read-only Postgres access, domain map, source labels, types
 .github/workflows/daily-fetch.yml   daily cron (needs DATABASE_URL secret)
 docs/PLAN.md     the plan and decision log
@@ -179,7 +189,8 @@ python3 -m dontdie migrate     # apply migrations
 python3 -m dontdie fetch       # all sources → raw JSON landing zone
 python3 -m dontdie load        # landing zone → Postgres, relevance-tagged
 python3 -m dontdie integrity   # Retraction Watch pass: flag retracted items
-python3 -m dontdie run         # fetch + load + integrity — what the cron runs
+python3 -m dontdie digest      # rebuild the weekly digest from the corpus
+python3 -m dontdie run         # fetch + load + integrity + digest — what the cron runs
 
 # finer control:
 python3 -m dontdie fetch --source pubmed --days 7 --limit 50
@@ -212,6 +223,11 @@ Sources: `pubmed`, `ctgov`, `europemc`, `isrctn`, `ctis`, `drugage`,
   retracted years after it landed.
 - GenAge, CellAge and AnAge re-land their full snapshots each run, like
   DrugAge; `--days`/`--limit` do not apply to them.
+- `digest` is a pure recompute over the store — no fetches, no LLM, safe to
+  delete and rebuild every run. Issues start at the pipeline's first fetch
+  ("what changed while we watched"), one per ISO week; the current week's
+  issue stays open and refreshes on every `run`. Undated snapshot datasets
+  never appear in a digest — re-landing a snapshot is not a weekly change.
 
 - The landing zone lives in `pipeline/state/` (gitignored), with a
   `fetch_log.jsonl` of every run.
@@ -270,7 +286,9 @@ npm run dev    # http://localhost:3000
 
 | Route | What it shows |
 |---|---|
-| `/` | The domain map, search box, recently gathered items |
+| `/` | The latest digest issue ("This week"), the domain map, search box, recently gathered items |
+| `/digest` | The latest weekly issue in full + the archive |
+| `/digest/[slug]` | One issue (e.g. `2026-w45`), sections in domain order, media coverage last |
 | `/domains/[slug]` | Relevant items in one domain (senolytics, biomarkers, …) |
 | `/items/[slug]` | One item: metadata, abstract/summary, attribution, gate disclosure |
 | `/search?q=…` | Corpus search over titles and abstracts/summaries |
@@ -287,8 +305,9 @@ Without `DATABASE_URL` the site builds and runs with an honest
 2. **Site** — import the repo into Vercel, root directory `site/`, set
    `DATABASE_URL`, deploy.
 3. **Daily pipeline** — set the repo secret `DATABASE_URL`; the
-   `daily-fetch` workflow then runs `migrate` + `fetch` + `load` daily at
-   ~06:10 UTC. Without the secret it skips itself cleanly.
+   `daily-fetch` workflow then runs `migrate` + `run` (fetch + load +
+   integrity + digest) daily at ~06:10 UTC, so the open issue refreshes and
+   the finished week lands. Without the secret it skips itself cleanly.
 
 ## Attribution & licensing
 

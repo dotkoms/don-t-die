@@ -17,7 +17,8 @@ export default async function SearchPage({
 
   const rows = trimmed
     ? await query<Result>(
-        `SELECT slug, source, source_id, title, url, published, is_relevant,
+        `SELECT slug, source, source_id, title, url,
+                published::text AS published, is_relevant,
                 relevance_terms, raw,
                 CASE
                   WHEN title ILIKE $1 THEN 'title'

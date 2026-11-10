@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { query } from "@/lib/db";
 import { DOMAINS } from "@/lib/domains";
+import { getDigest, getDigestItems, statsLine, weekLabel } from "@/lib/digest";
 import { sourceLabel } from "@/lib/sourceLabel";
 import type { Item } from "@/lib/types";
 
@@ -9,7 +10,7 @@ export const dynamic = "force-dynamic";
 type CountRow = { domain: string; n: string };
 
 export default async function Home() {
-  const [domainCounts, recent] = await Promise.all([
+  const [domainCounts, recent, digest] = await Promise.all([
     query<CountRow>(
       `SELECT domain, count(*)::text AS n
        FROM item_domains
@@ -18,13 +19,17 @@ export default async function Home() {
        GROUP BY domain`,
     ),
     query<Item>(
-      `SELECT slug, source, source_id, title, url, published, is_relevant,
+      `SELECT slug, source, source_id, title, url,
+              published::text AS published, is_relevant,
               relevance_terms, raw
        FROM items WHERE is_relevant
+         AND published IS NOT NULL AND published <= CURRENT_DATE
        ORDER BY COALESCE(published, updated_at::date) DESC NULLS LAST
        LIMIT 10`,
     ),
+    getDigest(),
   ]);
+  const lead = digest ? await getDigestItems(digest.slug, 5) : null;
 
   const counts = new Map((domainCounts ?? []).map((r) => [r.domain, Number(r.n)]));
   const total = [...counts.values()].reduce((a, b) => a + b, 0);
@@ -54,6 +59,37 @@ export default async function Home() {
               aria-label="Search the corpus"
             />
           </form>
+
+          <h2 id="this-week">This week</h2>
+          {digest && lead && lead.length > 0 ? (
+            <>
+              <p className="meta">
+                <Link href={`/digest/${digest.slug}`}>
+                  {weekLabel(digest.week_start, digest.week_end)}
+                </Link>{" "}
+                — {statsLine(digest.stats)}
+              </p>
+              <ul className="items">
+                {lead.map((item) => (
+                  <li key={item.slug}>
+                    <Link href={`/items/${item.slug}`}>{item.title}</Link>{" "}
+                    <span className="meta">
+                      {sourceLabel(item)}
+                      {item.published ? ` · ${item.published}` : ""}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="meta">
+                <Link href="/digest">Read the full issue →</Link>
+              </p>
+            </>
+          ) : (
+            <p className="empty">
+              No digest issue yet — the pipeline has not built one. Run{" "}
+              <code>python3 -m dontdie digest</code> against a loaded corpus.
+            </p>
+          )}
 
           <h2>The domain map</h2>
           <ul className="domains">

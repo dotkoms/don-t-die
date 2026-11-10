@@ -17,7 +17,8 @@ export default async function DomainPage({
   const { slug } = await params;
   const [items, tagged] = await Promise.all([
     query<Item>(
-      `SELECT slug, source, source_id, title, url, published, is_relevant,
+      `SELECT slug, source, source_id, title, url,
+              published::text AS published, is_relevant,
               relevance_terms, raw
        FROM items
        JOIN item_domains ON items.id = item_domains.item_id

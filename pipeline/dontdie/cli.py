@@ -68,18 +68,33 @@ def cmd_integrity(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_digest(args: argparse.Namespace) -> int:
+    """Weekly digest: recompute every issue from the corpus (no LLM)."""
+    from . import digest
+
+    stats = digest.build()
+    print(
+        f"digest: {stats['issues']} issues, {stats['items']} ranked items "
+        f"(latest {stats.get('latest_slug')}: "
+        f"{stats.get('latest_items')} items)"
+    )
+    landing.append_fetch_log({"command": "digest", "stats": stats})
+    return 0
+
+
 def cmd_run(args: argparse.Namespace) -> int:
-    """fetch + load + integrity — the cron entrypoint."""
+    """fetch + load + integrity + digest — the cron entrypoint."""
     fetch_args = argparse.Namespace(
         sources=args.sources, days=args.days, limit=args.limit
     )
     status = cmd_fetch(fetch_args)
     if status != 0:
         return status
-    status = cmd_load(args)
-    if status != 0:
-        return status
-    return cmd_integrity(args)
+    for step in (cmd_load, cmd_integrity, cmd_digest):
+        status = step(args)
+        if status != 0:
+            return status
+    return 0
 
 
 def main(argv: Optional[List[str]] = None) -> int:
@@ -93,8 +108,12 @@ def main(argv: Optional[List[str]] = None) -> int:
         help="Retraction Watch pass: flag retracted corpus items",
     )
     p_migrate = sub.add_parser("migrate", help="apply pending migrations")
+    p_digest = sub.add_parser(
+        "digest",
+        help="weekly digest: recompute every issue from the corpus",
+    )
     p_run = sub.add_parser(
-        "run", help="fetch then load then integrity (cron entrypoint)"
+        "run", help="fetch then load then integrity then digest (cron entrypoint)"
     )
     p_research = sub.add_parser(
         "research", help="multi-agent research note for a target (dry run)"
@@ -115,6 +134,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     p_load.set_defaults(func=cmd_load)
     p_integrity.set_defaults(func=cmd_integrity)
     p_migrate.set_defaults(func=cmd_migrate)
+    p_digest.set_defaults(func=cmd_digest)
     p_run.set_defaults(func=cmd_run)
     p_research.set_defaults(func=cmd_research)
 

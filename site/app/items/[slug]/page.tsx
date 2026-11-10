@@ -19,7 +19,8 @@ export default async function ItemPage({
 }) {
   const { slug } = await params;
   const rows = await query<Item>(
-    `SELECT slug, source, source_id, title, url, published, is_relevant,
+    `SELECT slug, source, source_id, title, url,
+            published::text AS published, is_relevant,
             relevance_terms, relevance_method,
             is_retracted, retraction_nature, retraction_reason,
             retraction_date, retraction_url, raw
