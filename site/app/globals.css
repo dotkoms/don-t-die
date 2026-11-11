@@ -168,3 +168,54 @@ code {
   font-variant-numeric: tabular-nums;
   opacity: 0.7;
 }
+
+/* Watchlist (site/app/watching, M6) — follow buttons and the watching
+   page's sections. All state is browser-local (decision 15). */
+.follow {
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.15rem 0.75rem;
+  margin-bottom: 1rem;
+  background: none;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.follow:hover {
+  opacity: 0.75;
+}
+
+main.watching > section {
+  margin-bottom: 1.75rem;
+}
+
+main.watching > section h2 {
+  margin-top: 0.75rem;
+}
+
+main.watching > section h2 .count {
+  margin-left: 0.25rem;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+}
+
+.ai-summary {
+  display: block;
+}
+
+.watch-tools .follow {
+  margin-bottom: 0.25rem;
+  display: inline-block;
+}
+
+.watch-import {
+  position: relative;
+}
+
+.watch-import input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}

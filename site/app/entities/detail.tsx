@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FollowButton } from "../watching/FollowButton";
 import { sourceLabel } from "@/lib/sourceLabel";
 import { linkLine, entitySubline, kindPath, kindLabel } from "@/lib/entities";
 import type { Entity } from "@/lib/entities";
@@ -19,6 +20,7 @@ export function EntityDetail({
   return (
     <>
       <h1>{entity.name}</h1>
+      <FollowButton kind={entity.kind} slug={entity.slug} />
       <p className="meta">
         {entitySubline(entity)}
         {entitySubline(entity) ? " · " : ""}

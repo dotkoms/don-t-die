@@ -30,7 +30,7 @@ The full plan and decision log live in [`docs/PLAN.md`](docs/PLAN.md).
 | M3 | Weekly digest as the landing page's top section (deterministic, no LLM) | **Done** |
 | M4 | Entity pages (compounds, trials, orgs) — the digest's destinations | **Done** |
 | M5 | LLM extraction pass with labeled, provenance-safe fields | **Done** |
-| M6 | Tracking / follow features for visitors | Planned |
+| M6 | Tracking / follow features for visitors | **Done** |
 
 ## Corpus at a glance
 
@@ -184,8 +184,10 @@ pipeline/        Python — fetch, landing zone, relevance gate, Postgres store
 site/            Next.js/TypeScript — the public knowledge base
   app/             routes: /, /digest, /digest/[slug], /domains/[slug],
                    /compounds, /compounds/[slug], /orgs, /orgs/[slug],
-                   /trials, /trials/[slug], /items/[slug], /search
-  lib/             read-only Postgres access, domain map, source labels, types
+                   /trials, /trials/[slug], /items/[slug], /search,
+                   /watching
+  lib/             read-only Postgres access, domain map, source labels, types,
+                   the browser-local watchlist
 .github/workflows/daily-fetch.yml   daily cron (needs DATABASE_URL secret)
 docs/PLAN.md     the plan and decision log
 ```
@@ -328,6 +330,21 @@ Cost and consent:
 - `extract` is never part of `run`: the cron chain stays free and
   deterministic.
 
+## The watchlist (M6)
+
+Visitors can follow a domain, a compound, an organization, or a trial from
+its page — the follow button writes to the visitor's browser (localStorage)
+and nothing else: no accounts, no server state, no write endpoints, and no
+visitor data ever reaching the database. `/watching` then aggregates
+everything the store knows per followed thing: totals, what's new in the
+last two weeks, the recent items (with their AI-extracted summary when one
+exists, labeled), a followed trial's current status, and a marker on
+anything that made this week's digest. The URL carries the followed slugs,
+so a `/watching?…` link is shareable without touching the visitor's own
+list, which exports/imports as JSON (import merges, never overwrites).
+Alerts are deliberately not v1: the site tells you what changed when you
+come back; it does not chase you.
+
 ## Running the site
 
 Requires Node 20+.
@@ -352,6 +369,7 @@ npm run dev    # http://localhost:3000
 | `/trials/[slug]` | One trial: its registry record and citing corpus items |
 | `/domains/[slug]` | Relevant items in one domain (senolytics, biomarkers, …) |
 | `/items/[slug]` | One item: metadata, abstract/summary, attribution, gate disclosure, and (when extracted) the labeled AI-extracted fields |
+| `/watching` | Your follow list's aggregate — what changed lately in everything you watch (browser-local, shareable via URL) |
 | `/search?q=…` | Corpus search over titles and abstracts/summaries |
 
 Without `DATABASE_URL` the site builds and runs with an honest

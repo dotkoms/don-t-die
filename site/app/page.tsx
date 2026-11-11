@@ -65,6 +65,11 @@ export default async function Home() {
             <Link href="/trials">trials</Link> ·{" "}
             <Link href="/orgs">organizations</Link>
           </p>
+          <p className="meta">
+            Follow things you care about and see{" "}
+            <Link href="/watching">what changed lately</Link> — the list
+            stays in your browser.
+          </p>
 
           <h2 id="this-week">This week</h2>
           {digest && lead && lead.length > 0 ? (

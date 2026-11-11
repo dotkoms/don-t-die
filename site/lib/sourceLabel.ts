@@ -1,11 +1,14 @@
-import type { Item } from "./types";
+/** The shape sourceLabel actually reads — every item-like row (Item,
+ * WatchItem, …) satisfies it. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SourceLike = { source: string; raw: Record<string, any> };
 
 /**
  * One honest label per source kind — mirrors the pipeline's source tiers:
  * PubMed (journal), a primary registry (sponsor), a preprint (its server),
  * a curated dataset, or a tier-2 news outlet.
  */
-export function sourceLabel(item: Item): string {
+export function sourceLabel(item: SourceLike): string {
   if (item.source === "pubmed") return item.raw.journal ?? "PubMed";
   if (item.source === "ctgov") return item.raw.sponsor ?? "ClinicalTrials.gov";
   if (item.source === "europemc") {

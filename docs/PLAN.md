@@ -1,8 +1,8 @@
 # don-t-die — Research & Data Gathering System for Life Extension Medical Science
 
-Status: M0–M5 built (pipeline, site, news + peptides + research agents,
+Status: M0–M6 built (pipeline, site, news + peptides + research agents,
 funding sources, integrity pass, weekly digest, entity pages, extraction
-pass); this doc is the scope of record.
+pass, watchlist); this doc is the scope of record.
 
 ## 1. What this is
 
@@ -469,7 +469,46 @@ All eleven decisions closed (2026-11-09).
      fields in reading order (summary, evidence level, interventions,
      outcome). Items with no extraction render nothing.
 
-All fourteen decisions closed (2026-11-10).
+15. **Tracking: an anonymous watchlist that lives in the visitor's browser.**
+    M6's "tracking/follow features for visitors" — visitors, not accounts.
+    Built 2026-11-10; design points, each with a reason:
+   - **No accounts, no server state.** Follow buttons on domain pages and
+     entity pages (compound / org / trial) write to the visitor's browser
+     localStorage. The production site role stays exactly what it is —
+     read-only (`GRANT SELECT`), no write endpoints, nothing about a
+     visitor ever reaches the server or the database. Free-tier hosting
+     stays free; there is no PII to protect because none is collected.
+   - **What can be followed (v1):** a domain (senolytics, biomarkers, …),
+     a compound (rapamycin — every new mention, paper, trial, grant), an
+     organization (UCL — its new grants and sponsored trials), and a trial
+     (NCT04006321 — the things that matter about a trial are its status
+     changes). Each follow button sits on the page of the thing followed;
+     the button state is the browser's, so two visitors see two different
+     sites — same corpus, personal surface.
+   - **One aggregate page, `/watching`:** reads the stored slugs from
+     localStorage and renders the followed things' recent items — what
+     changed lately in each thing you watch, everything the store honestly
+     knows per followed thing (totals, the last two weeks' new count, the
+     recent items with their M5 extraction summary when one exists,
+     trial status, and a marker on anything that made this week's digest).
+     Server components take the slug lists as search parameters, so the
+     page is still all read-only queries and a followed-thing URL is
+     shareable; a bare /watching re-syncs from the browser on every visit,
+     and a shared link never rewrites the visitor's own list. The empty
+     state says plainly where the data lives, with JSON export/import
+     (import merges, never overwrites).
+   - **Alerts are deliberately not v1.** Email/webhook alerts need an
+     email provider or a sender (a keyed, opt-in provider), a write path,
+     and an identity to address — that's a new decision for a later
+     milestone, not slipped in here. v1's contract: the site tells you
+     what changed when you come back; it does not chase you.
+   - **Rejected alternatives, for the record:** server-side anonymous
+     follows (device cookie + DB rows) would break the read-only site
+     role and grow unattributable state for no capability localStorage
+     lacks; any auth (even magic-link email) drags accounts and PII into
+     a public knowledge base that has needed neither.
+
+All fifteen decisions closed (2026-11-10).
 
 ## 7. Milestones
 
@@ -506,4 +545,8 @@ Revised for a public product:
   extract` — dry run by default, `--go` gated, realtime for the trickle and
   `--batch`/`--collect` for the half-price backfill; four labeled fields per
   relevant item, shown on item pages as generated, never source truth.
-- M6: tracking/follow features for visitors.
+- **M6 — done (this branch, stacked on the M5 branch).** The watchlist
+  (decision 15): follow buttons on domain and entity pages, browser-local
+  state, and `/watching` aggregating everything the store knows per
+  followed thing. No accounts, no server state, no alerts (deliberately —
+  see decision 15).

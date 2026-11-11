@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { FollowButton } from "../../watching/FollowButton";
 import { query } from "@/lib/db";
 import { domainName } from "@/lib/domains";
 import { sourceLabel } from "@/lib/sourceLabel";
@@ -44,6 +45,7 @@ export default async function DomainPage({
         ← the domain map
       </Link>
       <h1>{domainName(slug)}</h1>
+      <FollowButton kind="domain" slug={slug} />
 
       {items === null ? (
         <p className="empty">The store is not connected (no DATABASE_URL).</p>
