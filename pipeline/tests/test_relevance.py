@@ -45,7 +45,7 @@ def test_no_terms():
 def test_tag_adds_labeled_fields():
     tagged = tag(_rec("Rapamycin extends mouse lifespan"))
     assert tagged["is_relevant"] is True
-    assert tagged["relevance_method"] == "keyword-v1.2"
+    assert tagged["relevance_method"] == "keyword-v1.3"
     assert "rapamycin" in tagged["relevance_terms"]
 
 
@@ -107,3 +107,34 @@ def test_composite_endpoint_is_not_materials():
 def test_materials_exclusion_still_works():
     ok, _ = classify(_rec("Aging of composite resin dental restorations"))
     assert not ok
+
+
+def test_clinic_sweep_peptides_match():
+    for term in ("sermorelin", "ibutamoren", "MK-677", "5-amino-1MQ",
+                 "ARA-290", "cibinetide", "FOXO4-DRI", "DSIP",
+                 "cagrilintide", "mazdutide", "survodutide"):
+        ok, _ = classify(_rec(f"A study of {term} in aged mice"))
+        assert ok, term
+
+
+def test_clinic_sweep_medicines_match():
+    for term in ("urolithin A", "berberine", "GlyNAC"):
+        ok, _ = classify(_rec(f"Supplementation with {term} and muscle aging"))
+        assert ok, term
+
+
+def test_big_literature_compounds_stay_out_of_the_gate():
+    # Taurine, alpha-ketoglutarate and everolimus are entity-only: their
+    # general literatures (energy drinks, biochemistry, oncology) would
+    # flood the corpus, so a bare mention must NOT pass the gate.
+    for term in ("taurine", "alpha-ketoglutarate", "everolimus"):
+        ok, _ = classify(_rec(f"Effects of {term} on blood pressure"))
+        assert not ok, term
+
+
+def test_taurine_lands_via_aging_context():
+    # But the aging-science taurine paper still passes — via the aging terms.
+    ok, terms = classify(
+        _rec("Taurine deficiency as a driver of aging in mice")
+    )
+    assert ok and "aging" in terms

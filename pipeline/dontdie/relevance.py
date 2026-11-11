@@ -42,6 +42,17 @@ AGING_TERMS: List[Tuple[str, bool]] = [
     ("selank", True), ("semax", True), ("dihexa", True), ("noopept", True),
     ("carnosine", True), ("retatrutide", True), ("orforglipron", True),
     ("klotho", True),
+    # Gate v1.3 (2026-11-11): the clinic-sweep compounds. Taurine, alpha-
+    # ketoglutarate and everolimus are deliberately NOT gate terms: their
+    # general literatures (energy drinks, biochemistry, oncology) carry no
+    # aging vocabulary, so a bare mention would flood the corpus; their
+    # aging-context papers land via the aging terms above. They are
+    # entities only.
+    ("sermorelin", True), ("ibutamoren", True), ("MK-677", True),
+    ("5-amino-1MQ", True), ("ARA-290", True), ("cibinetide", True),
+    ("FOXO4-DRI", True), ("DSIP", True), ("cagrilintide", True),
+    ("mazdutide", True), ("survodutide", True),
+    ("urolithin A", True), ("berberine", True), ("GlyNAC", True),
 ]
 
 # Strong false-positive sources inside those terms; e.g. "aging" of materials.
@@ -67,6 +78,10 @@ STRONG_TERMS = [
     "thymosin beta", "tb-500", "thymosin alpha", "ghrp", "hexarelin",
     "shlp", "aod-9604", "selank", "semax", "dihexa", "noopept", "carnosine",
     "retatrutide", "orforglipron", "klotho",
+    # Gate v1.3 (2026-11-11) — the clinic-sweep compounds above.
+    "sermorelin", "ibutamoren", "mk-677", "5-amino-1mq", "ara-290",
+    "cibinetide", "foxo4-dri", "dsip", "cagrilintide", "mazdutide",
+    "survodutide", "urolithin a", "berberine", "glynac",
 ]
 
 _TERM_RE = [
@@ -110,5 +125,5 @@ def tag(record: Dict[str, Any]) -> Dict[str, Any]:
     out = dict(record)
     out["is_relevant"] = is_relevant
     out["relevance_terms"] = matched
-    out["relevance_method"] = "keyword-v1.2"
+    out["relevance_method"] = "keyword-v1.3"
     return out

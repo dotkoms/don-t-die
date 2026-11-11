@@ -87,6 +87,31 @@ COMPOUNDS: List[Tuple[str, str, str, List[str]]] = [
     ("orforglipron", "Orforglipron", "GLP-1 agonist", []),
     ("liraglutide", "Liraglutide", "GLP-1 agonist", []),
     ("exenatide", "Exenatide", "GLP-1 agonist", []),
+    # Gate v1.3 (2026-11-11): the clinic-sweep compounds, plus the
+    # big-literature compounds that are entities but deliberately not gate
+    # terms (taurine, alpha-ketoglutarate, everolimus).
+    ("sermorelin", "Sermorelin", "GHRH analog peptide", []),
+    ("ibutamoren", "Ibutamoren", "GH secretagogue",
+     ["MK-677", "MK0677", "ibutamoren mesylate"]),
+    ("5-amino-1mq", "5-Amino-1MQ", "NNMT inhibitor peptide",
+     ["5A1MQ", "5-amino-1-methylquinolinium"]),
+    ("ara-290", "ARA-290", "innate repair peptide", ["cibinetide"]),
+    ("foxo4-dri", "FOXO4-DRI", "peptide senolytic",
+     ["FOXO4 DRI", "foxo4-dri"]),
+    ("dsip", "DSIP", "peptide",
+     ["delta sleep-inducing peptide", "delta sleep inducing peptide"]),
+    ("cagrilintide", "Cagrilintide", "amylin analog", []),
+    ("mazdutide", "Mazdutide", "GLP-1 / glucagon agonist", []),
+    ("survodutide", "Survodutide", "GLP-1 / glucagon agonist", []),
+    ("urolithin-a", "Urolithin A", "mitophagy activator", []),
+    ("berberine", "Berberine", "AMPK activator", ["dihydroberberine"]),
+    ("taurine", "Taurine", "amino acid", []),
+    ("alpha-ketoglutarate", "Alpha-ketoglutarate", "metabolite",
+     ["α-ketoglutarate", "CaAKG", "AKG",
+      "calcium alpha-ketoglutarate", "calcium α-ketoglutarate"]),
+    ("glynac", "GlyNAC", "glycine + N-acetylcysteine",
+     ["glycine and N-acetylcysteine"]),
+    ("everolimus", "Everolimus", "mTOR inhibitor (rapalog)", ["Afinitor"]),
 ]
 
 # Link kinds, most specific first — the winner when one item-entity pair

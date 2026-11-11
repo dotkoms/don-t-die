@@ -310,7 +310,8 @@ All nine decisions closed (2026-11-08).
      grant sources) match only the demographic word "aged"
      (trial-eligibility language, e.g. "subjects aged 18–65"); the same
      class already existed in trial sources (48 items before). A gate
-     refinement (v1.3, e.g. discounting "aged" when it is the sole match
+     refinement (v1.4 now that v1.3 is the 2026-11-11 coverage widening,
+     e.g. discounting "aged" when it is the sole match
      adjacent to a number range) is a possible later decision — recorded
      here rather than fixed mid-expansion, because gate changes ripple
      across every source.
@@ -510,6 +511,37 @@ All eleven decisions closed (2026-11-09).
 
 All fifteen decisions closed (2026-11-10).
 
+16. **Coverage widening, gate v1.3: the clinic-sweep compounds (2026-11-11).**
+    A fresh sweep of current clinic/telehealth menus and supplement-evidence
+    rankings found ~15 compounds circulating in the longevity space that the
+    recall queries, the gate and the entity vocabulary all missed. The rule
+    that decided each one: **a compound earns a gate term only when its
+    literature usually carries no aging vocabulary** — for those compounds
+    the mention itself is the life-extension context, so without a gate term
+    they would never pass. Two tiers came out of that rule:
+   - **Tier 1, added everywhere** (recall queries, gate terms + strong
+     terms, entity vocabulary): sermorelin, ibutamoren (MK-677), 5-amino-1MQ,
+     ARA-290/cibinetide, FOXO4-DRI, DSIP, the newer GLP-1 family in trials
+     (cagrilintide, mazdutide, survodutide), plus the medicines berberine
+     (on the metformin precedent), urolithin A and GlyNAC.
+   - **Tier 2, entity-only** — taurine, alpha-ketoglutarate, everolimus:
+     big general literatures (energy drinks, biochemistry, oncology) with
+     no aging vocabulary, so a gate term would flood the corpus; their
+     aging-context papers (e.g. the 2023 taurine Science paper) land via
+     the aging terms, and the entity linker now recognizes them when they
+     do. For the record, considered and left out entirely: kisspeptin,
+     PT-141/bremelanotide, glutathione, VIP, LL-37, oxytocin, methylene
+     blue, SLU-PP-332 — no credible life-extension literature to recall;
+     and sulforaphane, whose recall would flood via the general
+     cruciferous-vegetables literature.
+   - **Backfill note.** The daily fetch is a 7-day window, so after a
+     gate/query change the historical depth arrives only via an explicit
+     wide-window backfill (`fetch --days N`); `load` then re-tags every
+     landed record — the store's upsert re-runs the gate, so a plain
+     `load` moves the whole corpus to v1.3 tagging without a re-fetch.
+
+All sixteen decisions closed (2026-11-11).
+
 ## 7. Milestones
 
 Revised for a public product:
@@ -550,3 +582,7 @@ Revised for a public product:
   state, and `/watching` aggregating everything the store knows per
   followed thing. No accounts, no server state, no alerts (deliberately —
   see decision 15).
+- **Gate v1.3 coverage widening — done (2026-11-11, decision 16).** The
+  clinic-sweep compounds added to the recall queries, the gate (v1.2 →
+  v1.3) and the entity vocabulary; taurine, alpha-ketoglutarate and
+  everolimus entity-only.

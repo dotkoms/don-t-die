@@ -49,7 +49,7 @@ export default async function ItemPage({
         <h1>{item.title}</h1>
         <p className="empty">
           This item is in the corpus but did not pass the relevance gate (
-          <code>{item.relevance_method || "keyword-v1.2"}</code>): no
+          <code>{item.relevance_method || "keyword-v1.3"}</code>): no
           aging-science term found in its title or abstract. It is kept for
           auditability, not shown in public views.
         </p>
@@ -495,7 +495,7 @@ export default async function ItemPage({
       </p>
 
       <p className="meta">
-        Relevance gate: <code>{item.relevance_method || "keyword-v1.2"}</code>,
+        Relevance gate: <code>{item.relevance_method || "keyword-v1.3"}</code>,
         matched {item.relevance_terms.join(", ") || "—"}
       </p>
     </main>

@@ -128,12 +128,19 @@ What the corpus contains:
   API has no date-added filter — verified); EU CORDIS and UKRI GtR re-land
   their matched projects the same way. Landing is idempotent, so a re-fetch
   overwrites instead of duplicating.
-- **Relevance gate:** `keyword-v1.2` — 61 aging/peptide term patterns, 15
-  materials false-positive hints, 47 strong terms that override the hints.
-  The 15,799 excluded items are kept in the store and reachable by slug, just
-  not listed publicly. Known precision cost: ~1% of relevant items match only
-  the demographic word "aged" (trial-eligibility language like "subjects aged
-  18–65"), recorded in the plan as a possible gate v1.3 refinement.
+- **Relevance gate:** `keyword-v1.3` — 75 aging/peptide/medicine term
+  patterns, 15 materials false-positive hints, 61 strong terms that override
+  the hints. The 2026-11-11 widening (gate v1.3) added the clinic-sweep
+  compounds: sermorelin, ibutamoren (MK-677), 5-amino-1MQ, ARA-290,
+  FOXO4-DRI, DSIP, the newer GLP-1 family (cagrilintide, mazdutide,
+  survodutide), plus berberine, urolithin A and GlyNAC; taurine,
+  alpha-ketoglutarate and everolimus are deliberately entity-only — their
+  general literatures would flood the gate, and their aging-context papers
+  land via the aging terms. The 15,799 excluded items are kept in the store
+  and reachable by slug, just not listed publicly. Known precision cost:
+  ~1% of relevant items match only the demographic word "aged"
+  (trial-eligibility language like "subjects aged 18–65"), recorded in the
+  plan as a possible gate v1.4 refinement.
 
 ## Principles
 
@@ -143,7 +150,7 @@ What the corpus contains:
   its stable id (PMID, NCT id) — a re-fetch overwrites the same path instead of
   duplicating.
 - **Honest labeling.** Relevance is a transparent keyword gate
-  (`keyword-v1.2`), not a model, and says so. LLM-generated research notes
+  (`keyword-v1.3`), not a model, and says so. LLM-generated research notes
   record their generating model; LLM-extracted fields (M5) live in a
   separate table with model + date, never merged with source truth, and
   item pages label them as an AI extraction. A
@@ -170,7 +177,7 @@ pipeline/        Python — fetch, landing zone, relevance gate, Postgres store
                      reporter.py, cordis.py, gtr.py (one adapter per source)
     agents/          outlets.py (allowlists), research.py (research agents)
     landing.py       raw JSON landing zone (the dedupe mechanism)
-    relevance.py     deterministic keyword-v1.2 gate
+    relevance.py     deterministic keyword-v1.3 gate
     integrity.py     Retraction Watch pass: retraction flags, not a source
     digest.py        deterministic weekly digest builder (no LLM)
     entities.py      deterministic entity linker: compounds, orgs, trials

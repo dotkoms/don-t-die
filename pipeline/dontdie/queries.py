@@ -19,13 +19,19 @@ PEPTIDE_TERMS = (
     '"glucagon-like peptide" OR "growth hormone-releasing peptide" OR '
     'GHRP-6 OR GHRP-2 OR hexarelin OR "thymosin beta-4" OR "TB-500" OR '
     '"thymosin alpha-1" OR "AOD-9604" OR selank OR semax OR dihexa OR '
-    'carnosine OR noopept OR "klotho-derived peptide"'
+    'carnosine OR noopept OR "klotho-derived peptide" OR '
+    # Gate v1.3 (2026-11-11): swept from current clinic/telehealth menus —
+    # the most-prescribed peptides we had no term for, plus the newer GLP-1
+    # family members in trials.
+    'sermorelin OR ibutamoren OR "MK-677" OR "5-amino-1MQ" OR "ARA-290" OR '
+    'cibinetide OR "FOXO4-DRI" OR "DSIP" OR cagrilintide OR mazdutide OR '
+    'survodutide'
 )
 
 PUBMED_QUERIES = [
     ("geroscience", 'aging[MeSH Terms] AND ("hallmarks of aging" OR geroscience OR senescence[MeSH Terms] OR "mTOR" OR autophagy)'),
     ("senolytics", 'senolytic OR senescence AND (clearance OR "senolytics"[Title/Abstract])'),
-    ("interventions-pharma", "rapamycin OR metformin OR \"NAD+\" OR nicotinamide OR senolytics OR spermidine OR acarbose OR fisetin"),
+    ("interventions-pharma", "rapamycin OR metformin OR \"NAD+\" OR nicotinamide OR senolytics OR spermidine OR acarbose OR fisetin OR berberine OR \"urolithin A\" OR GlyNAC"),
     ("rejuvenation", "reprogramming OR \"partial reprogramming\" OR rejuvenation OR \"plasma dilution\" OR \"yamanaka factors\""),
     ("biomarkers", "\"epigenetic clock\" OR \"DNA methylation age\" OR \"biological age\" OR \"aging biomarkers\""),
     ("longevity", "(longevity[Title] OR \"life extension\"[Title/Abstract] OR \"lifespan\"[Title/Abstract])"),
@@ -39,7 +45,7 @@ PUBMED_QUERIES = [
 _REGISTRY_TERMS = [
     ("geroscience", 'aging OR geroscience OR "biological aging"'),
     ("senolytics", "senescence OR senolytic OR senescent"),
-    ("interventions-pharma", "rapamycin OR metformin OR nicotinamide OR spermidine OR acarbose OR fisetin"),
+    ("interventions-pharma", "rapamycin OR metformin OR nicotinamide OR spermidine OR acarbose OR fisetin OR berberine OR \"urolithin A\" OR GlyNAC"),
     ("rejuvenation", 'reprogramming OR rejuvenation OR "plasma dilution" OR "young plasma"'),
     ("biomarkers", '"epigenetic clock" OR "biological age" OR "aging biomarker"'),
     ("longevity", 'longevity OR "life extension" OR lifespan'),
@@ -83,6 +89,13 @@ CTIS_QUERIES = [
     ("peptides", "GLP-1"),
     ("peptides", "tesamorelin"),
     ("peptides", "thymosin"),
+    # Gate v1.3 (2026-11-11): the clinic-sweep compounds.
+    ("peptides", "sermorelin"),
+    ("peptides", "ibutamoren"),
+    ("peptides", "ARA-290"),
+    ("peptides", "cagrilintide"),
+    ("interventions-pharma", "berberine"),
+    ("interventions-pharma", "urolithin A"),
 ]
 
 # NIH RePORTER full-text search takes the same OR/phrase syntax as the
@@ -99,7 +112,7 @@ CORDIS_QUERIES = [
     ("senolytics", ["senescence", "senolytic", "senescent"]),
     ("interventions-pharma",
      ["rapamycin", "metformin", "nicotinamide", "spermidine", "acarbose",
-      "fisetin"]),
+      "fisetin", "berberine", "urolithin A", "GlyNAC"]),
     ("rejuvenation",
      ["reprogramming", "rejuvenation", "plasma dilution", "young plasma"]),
     ("biomarkers", ["epigenetic clock", "biological age", "aging biomarker"]),
@@ -107,7 +120,7 @@ CORDIS_QUERIES = [
     ("peptides",
      ["BPC-157", "epitalon", "MOTS-c", "humanin", "elamipretide",
       "semaglutide", "tirzepatide", "GLP-1", "tesamorelin", "ipamorelin",
-      "thymosin"]),
+      "thymosin", "sermorelin", "ibutamoren", "cagrilintide"]),
 ]
 
 # UKRI GtR's search takes one term per request (like CTIS), so the CORDIS
